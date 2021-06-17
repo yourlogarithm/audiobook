@@ -8,17 +8,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'classes/settings.dart';
 
-bool _defaultPage = true;
+ValueNotifier<bool> _defaultPage = ValueNotifier(true);
 
 void moveHome() {
-  Content.contentNavigatorKey.currentState!.popUntil(ModalRoute.withName('/'));
-  _defaultPage = true;
+  _defaultPage.value = true;
   bottomBarIndex.value = 1;
+  Content.contentNavigatorKey.currentState!.pushReplacementNamed('/');
 }
 
 class Content extends StatefulWidget {
-  static final GlobalKey<NavigatorState> contentNavigatorKey =
-      GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> contentNavigatorKey = GlobalKey<NavigatorState>();
 
   @override
   _ContentState createState() => _ContentState();
@@ -31,14 +30,13 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
     });
     switch (bottomBarIndex.value) {
       case 0:
-        Content.contentNavigatorKey.currentState!.pushNamed('/library');
+        Content.contentNavigatorKey.currentState!.pushReplacementNamed('/library');
         break;
       case 1:
-        Content.contentNavigatorKey.currentState!
-            .popUntil(ModalRoute.withName('/'));
+        Content.contentNavigatorKey.currentState!.pushReplacementNamed('/');
         break;
       case 2:
-        Content.contentNavigatorKey.currentState!.pushNamed('/settings');
+        Content.contentNavigatorKey.currentState!.pushReplacementNamed('/settings');
         break;
     }
   }
@@ -91,9 +89,11 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
         ));
         return WillPopScope(
             onWillPop: () async {
-              setState(() {
-                moveHome();
-              });
+              if (bottomBarIndex.value != 1){
+                setState(() {
+                  moveHome();
+                });
+              }
               return false;
             },
             child: Scaffold(
@@ -118,28 +118,26 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
                           case '/bookPage':
                             Book book = settings.arguments as Book;
                             setState(() {
-                              _defaultPage = false;
+                              _defaultPage.value = false;
                             });
                             builder = BookPage(book: book);
                             break;
                           case '/addBook':
                             builder = AddBookPage();
                             setState(() {
-                              _defaultPage = false;
+                              _defaultPage.value = false;
                             });
                             break;
                           case '/changeCover':
                             Book book = settings.arguments as Book;
                             setState(() {
-                              _defaultPage = false;
+                              _defaultPage.value = false;
                             });
                             builder = ChangeCoverPage(book: book);
                             break;
                           default:
                             throw Exception('Invalid route: ${settings.name}');
                         }
-                        // return MaterialPageRoute(
-                        //     builder: builder, settings: settings);
                         return PageRouteBuilder(
                             transitionDuration: Duration(milliseconds: 300),
                             transitionsBuilder:
@@ -157,76 +155,78 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
                       },
                     ),
                   ),
-                  _defaultPage
-                      ? Positioned(
-                          bottom: 0,
-                          child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
-                              height: MediaQuery.of(context).size.height * 0.08,
-                              width: MediaQuery.of(context).size.width,
-                              color: Colors.transparent,
-                              child: ValueListenableBuilder(
-                                valueListenable: bottomBarIndex,
-                                builder: (context, value, _) {
-                                  return Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      AnimatedContainer(
-                                        width: bottomBarIndex.value == 0
-                                            ? MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.3
-                                            : 54,
-                                        decoration: bottomBarIndex.value == 0
-                                            ? BoxDecoration(
-                                                color: Settings.colors[6],
-                                                borderRadius:
-                                                    BorderRadius.circular(25))
-                                            : BoxDecoration(),
-                                        duration: Duration(milliseconds: 300),
-                                        child: _item(0, Icons.menu, 'Library'),
-                                      ),
-                                      AnimatedContainer(
-                                        width: bottomBarIndex.value == 1
-                                            ? MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.3
-                                            : 54,
-                                        decoration: bottomBarIndex.value == 1
-                                            ? BoxDecoration(
-                                                color: Settings.colors[6],
-                                                borderRadius:
-                                                    BorderRadius.circular(25))
-                                            : BoxDecoration(),
-                                        duration: Duration(milliseconds: 300),
-                                        child: _item(1, Icons.home, 'Home'),
-                                      ),
-                                      AnimatedContainer(
-                                        width: bottomBarIndex.value == 2
-                                            ? MediaQuery.of(context)
-                                                    .size
-                                                    .width *
-                                                0.3
-                                            : 54,
-                                        decoration: bottomBarIndex.value == 2
-                                            ? BoxDecoration(
-                                                color: Settings.colors[6],
-                                                borderRadius:
-                                                    BorderRadius.circular(25))
-                                            : BoxDecoration(),
-                                        duration: Duration(milliseconds: 300),
-                                        child: _item(
-                                            2, Icons.settings, 'Settings'),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              )),
-                        )
-                      : Container()
+                  ValueListenableBuilder<bool>(valueListenable: _defaultPage, builder: (context, value, _) {
+                    return value
+                        ? Positioned(
+                      bottom: 0,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          height: MediaQuery.of(context).size.height * 0.08,
+                          width: MediaQuery.of(context).size.width,
+                          color: Colors.transparent,
+                          child: ValueListenableBuilder(
+                            valueListenable: bottomBarIndex,
+                            builder: (context, value, _) {
+                              return Row(
+                                mainAxisAlignment:
+                                MainAxisAlignment.spaceBetween,
+                                children: [
+                                  AnimatedContainer(
+                                    width: bottomBarIndex.value == 0
+                                        ? MediaQuery.of(context)
+                                        .size
+                                        .width *
+                                        0.3
+                                        : 54,
+                                    decoration: bottomBarIndex.value == 0
+                                        ? BoxDecoration(
+                                        color: Settings.colors[6],
+                                        borderRadius:
+                                        BorderRadius.circular(25))
+                                        : BoxDecoration(),
+                                    duration: Duration(milliseconds: 300),
+                                    child: _item(0, Icons.menu, 'Library'),
+                                  ),
+                                  AnimatedContainer(
+                                    width: bottomBarIndex.value == 1
+                                        ? MediaQuery.of(context)
+                                        .size
+                                        .width *
+                                        0.3
+                                        : 54,
+                                    decoration: bottomBarIndex.value == 1
+                                        ? BoxDecoration(
+                                        color: Settings.colors[6],
+                                        borderRadius:
+                                        BorderRadius.circular(25))
+                                        : BoxDecoration(),
+                                    duration: Duration(milliseconds: 300),
+                                    child: _item(1, Icons.home, 'Home'),
+                                  ),
+                                  AnimatedContainer(
+                                    width: bottomBarIndex.value == 2
+                                        ? MediaQuery.of(context)
+                                        .size
+                                        .width *
+                                        0.3
+                                        : 54,
+                                    decoration: bottomBarIndex.value == 2
+                                        ? BoxDecoration(
+                                        color: Settings.colors[6],
+                                        borderRadius:
+                                        BorderRadius.circular(25))
+                                        : BoxDecoration(),
+                                    duration: Duration(milliseconds: 300),
+                                    child: _item(
+                                        2, Icons.settings, 'Settings'),
+                                  ),
+                                ],
+                              );
+                            },
+                          )),
+                    )
+                        : Container();
+                  })
                 ],
               ),
             ));
@@ -236,17 +236,3 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
 }
 
 ValueNotifier<int> bottomBarIndex = ValueNotifier(1);
-
-class MyBottomBar extends StatefulWidget {
-  // const MyBottomBar({Key key}) : super(key: key);
-
-  @override
-  _MyBottomBarState createState() => _MyBottomBarState();
-}
-
-class _MyBottomBarState extends State<MyBottomBar> {
-  @override
-  Widget build(BuildContext context) {
-    return Container();
-  }
-}

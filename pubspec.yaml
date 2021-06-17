@@ -20,6 +20,8 @@ dependencies:
   sqflite: ^2.0.0+3
   focused_menu: ^1.0.5
   numberpicker: ^2.1.1
+  audio_service: ^0.17.1
+  just_audio: ^0.7.5
 
 dev_dependencies:
   flutter_test:

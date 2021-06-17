@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:audio_service/audio_service.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/bookmark.dart';
 import 'package:audiobook/classes/database.dart';
+import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/classes/settings.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:focused_menu/focused_menu.dart';
 import 'package:focused_menu/modals.dart';
 
 class BookPage extends StatefulWidget {
@@ -135,95 +137,149 @@ class _TimelineState extends State<Timeline> {
   Widget build(BuildContext context) {
     return Container(
       width: MediaQuery.of(context).size.width * 0.85,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  convertDuration(widget.book.checkpoint),
-                  style: TextStyle(
-                      color: Settings.colors[4], fontFamily: 'Poppins'),
-                ),
-                Text(
-                  convertDuration(widget.book.length),
-                  style: TextStyle(
-                      color: Settings.colors[4], fontFamily: 'Poppins'),
-                )
-              ],
-            ),
-          ),
-          Stack(
+      child: StreamBuilder<Duration>(
+        stream: AudioService.positionStream,
+        builder: (context, snapshot) {
+          Duration _position = widget.book.checkpoint;
+          if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path){
+            AudioService.customAction('pposition').then((value) {
+              _position = Duration(seconds: value);
+              widget.book.checkpoint = _position;
+              if (_position == widget.book.length){
+                AudioService.stop();
+              }
+            });
+            widget.book.update();
+          }
+          return Column(
             children: [
-              Container(
-                width: MediaQuery.of(context).size.width * 0.85,
-                child: CustomPaint(
-                  foregroundPainter: TimelinePainter(Settings.colors[5],
-                      MediaQuery.of(context).size.width * 0.85),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                          convertDuration(_position),
+                          style: TextStyle(
+                              color: Settings.colors[4], fontFamily: 'Poppins'),
+                    ),
+                    Text(
+                      convertDuration(widget.book.length),
+                      style: TextStyle(
+                          color: Settings.colors[4], fontFamily: 'Poppins'
+                      ),
+                    )
+                  ],
                 ),
               ),
-              Container(
-                width: MediaQuery.of(context).size.width * 0.85,
-                child: CustomPaint(
-                  foregroundPainter: TimelinePainter(Settings.colors[6], 0),
-                ),
-              ),
-              CustomPaint(
-                foregroundPainter: TimelinePositionCirclePainter(0),
-              )
-            ],
-          ),
-          ValueListenableBuilder<bool>(
-              valueListenable: _isLocked,
-              builder: (context, value, _) {
-                if (value) {
-                  buttonsTopPadding = 0;
-                  buttonsHeight = 0;
-                  buttonsOpacity = 0;
-                } else {
-                  buttonsTopPadding = 0.005;
-                  buttonsHeight = 0.075;
-                  buttonsOpacity = 1;
-                }
-                return AnimatedContainer(
-                  height: MediaQuery.of(context).size.height * buttonsHeight,
-                  padding: EdgeInsets.only(
-                      top: MediaQuery.of(context).size.height *
-                          buttonsTopPadding),
-                  duration: Duration(milliseconds: 500),
-                  child: AnimatedOpacity(
-                    opacity: buttonsOpacity,
-                    duration: Duration(milliseconds: 500),
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          !value
-                              ? timelineControlButton(
-                                  Icons.skip_previous_outlined, () {})
-                              : Container(),
-                          !value
-                              ? timelineControlButton(
-                                  Icons.fast_rewind_outlined, () {})
-                              : Container(),
-                          !value
-                              ? timelineControlButton(
-                                  Icons.skip_previous_outlined, () {})
-                              : Container(),
-                          !value
-                              ? timelineControlButton(
-                                  Icons.fast_forward_outlined, () {})
-                              : Container(),
-                          !value
-                              ? timelineControlButton(
-                                  Icons.skip_next_outlined, () {})
-                              : Container(),
-                        ]),
+              Stack(
+                children: [
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.85,
+                    child: CustomPaint(
+                      foregroundPainter: TimelinePainter(Settings.colors[5], MediaQuery.of(context).size.width * 0.85),
+                    ),
                   ),
-                );
-              })
-        ],
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.85,
+                    child: CustomPaint(
+                      foregroundPainter: TimelinePainter(Settings.colors[6], (_position.inSeconds * MediaQuery.of(context).size.width * 0.85) / widget.book.length.inSeconds),
+                    ),
+                  ),
+                  CustomPaint(
+                    foregroundPainter: TimelinePositionCirclePainter((_position.inSeconds * MediaQuery.of(context).size.width * 0.85) / widget.book.length.inSeconds),
+                  )
+                ],
+              ),
+              ValueListenableBuilder<bool>(
+                  valueListenable: _isLocked,
+                  builder: (context, value, _) {
+                    if (value) {
+                      buttonsTopPadding = 0;
+                      buttonsHeight = 0;
+                      buttonsOpacity = 0;
+                    } else {
+                      buttonsTopPadding = 0.005;
+                      buttonsHeight = 0.075;
+                      buttonsOpacity = 1;
+                    }
+                    return AnimatedContainer(
+                      height: MediaQuery.of(context).size.height * buttonsHeight,
+                      padding: EdgeInsets.only(
+                          top: MediaQuery.of(context).size.height * buttonsTopPadding),
+                      duration: Duration(milliseconds: 500),
+                      child: AnimatedOpacity(
+                        opacity: buttonsOpacity,
+                        duration: Duration(milliseconds: 500),
+                        child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              !value
+                                  ? timelineControlButton(
+                                      Icons.skip_previous_outlined, () {})
+                                  : Container(),
+                              !value
+                                  ? timelineControlButton(
+                                      Icons.fast_rewind_outlined, () {
+                                          if (AudioService.running) {
+                                            Duration edited = _position-Settings.rewind;
+                                            AudioService.rewind();
+                                            widget.book.checkpoint = edited;
+                                            widget.book.update();
+                                          } else {
+                                            setState(() {
+                                              widget.book.checkpoint -= Settings.rewind;
+                                              if (widget.book.checkpoint < widget.book.length){
+                                                widget.book.checkpoint = Duration(seconds: 0);
+                                              }
+                                            });
+                                          }
+                                  })
+                                  : Container(),
+                              !value
+                                  ? StreamBuilder<PlaybackState>(
+                                      stream: AudioService.playbackStateStream,
+                                      builder: (context, snapshot) {
+                                        IconData icon = Icons.play_arrow;
+                                        if (snapshot.hasData) {
+                                          if (snapshot.data!.playing && playerUrl == widget.book.path) {
+                                            icon = Icons.pause;
+                                          }
+                                        }
+                                        return timelineControlButton(icon, () {
+                                          playBook(widget.book);
+                                        });
+                                      })
+                                  : Container(),
+                              !value
+                                  ? timelineControlButton(
+                                      Icons.fast_forward_outlined, () {
+                                        if (AudioService.running) {
+                                          Duration edited = _position+Settings.rewind;
+                                          AudioService.fastForward();
+                                          widget.book.checkpoint = edited;
+                                          widget.book.update();
+                                        } else {
+                                          setState(() {
+                                            widget.book.checkpoint += Settings.rewind;
+                                            if (widget.book.checkpoint > widget.book.length){
+                                              widget.book.checkpoint = widget.book.length;
+                                            }
+                                          });
+                                        }
+                                      })
+                                  : Container(),
+                              !value
+                                  ? timelineControlButton(
+                                      Icons.skip_next_outlined, () {})
+                                  : Container(),
+                            ]),
+                      ),
+                    );
+                  })
+            ],
+          );
+        }
       ),
     );
   }
@@ -283,7 +339,6 @@ class _BookmarkIconState extends State<BookmarkIcon>
   bool active = false;
 
   IconData icon = Icons.timer;
-  late Timer sleepTimer;
   Color color = Settings.colors[3];
 
   late AnimationController _animationController;
@@ -292,10 +347,8 @@ class _BookmarkIconState extends State<BookmarkIcon>
 
   @override
   void initState() {
-    _animationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-    _colorTween = ColorTween(begin: Settings.colors[3], end: Settings.colors[5])
-        .animate(_animationController);
+    _animationController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    _colorTween = ColorTween(begin: Settings.colors[3], end: Settings.colors[5]).animate(_animationController);
     super.initState();
   }
 
@@ -338,8 +391,7 @@ class _BookmarkIconState extends State<BookmarkIcon>
   }
 
   Future<List<FocusedMenuItem>> getBookmarks() async {
-    List<Bookmark> bookmarks =
-        await DatabaseProvider.getBookmarks(widget.book.title);
+    List<Bookmark> bookmarks = await DatabaseProvider.getBookmarks(widget.book.title);
     List<FocusedMenuItem> output = [];
     bookmarks.sort((a, b) => b.time.compareTo(a.time));
     bookmarks.forEach((bookmark) {
@@ -347,7 +399,6 @@ class _BookmarkIconState extends State<BookmarkIcon>
           onPressed: () {},
           backgroundColor: Settings.colors[1],
           title: Container(
-            width: MediaQuery.of(context).size.width * 0.5 - 28,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -358,23 +409,44 @@ class _BookmarkIconState extends State<BookmarkIcon>
                       fontFamily: 'Montserrat',
                       fontWeight: FontWeight.w600),
                 ),
-                ClipOval(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: ClipOval(
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            bookmarks.remove(bookmark);
-                          });
-                          Navigator.pop(context);
-                          bookmark.remove();
-                        },
-                        child: Icon(Icons.delete_outlined,
-                            color: Color(0xffde4949), size: 26),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ClipOval(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: ClipOval(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                bookmarks.remove(bookmark);
+                              });
+                              Navigator.pop(context);
+                              bookmark.remove();
+                            },
+                            child: Icon(Icons.edit_outlined, color: Settings.colors[4], size: 26),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    ClipOval(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: ClipOval(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                bookmarks.remove(bookmark);
+                              });
+                              Navigator.pop(context);
+                              bookmark.remove();
+                            },
+                            child: Icon(Icons.delete_outlined, color: Color(0xffde4949), size: 26),
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
                 )
               ],
             ),
@@ -389,46 +461,75 @@ class _BookmarkIconState extends State<BookmarkIcon>
         future: getBookmarks(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            return FocusedMenuHolder(
-                menuWidth: MediaQuery.of(context).size.width * 0.5,
-                onPressed: () {},
-                duration: Duration(milliseconds: 300),
-                menuBoxDecoration: BoxDecoration(
-                    color: Settings.colors[2],
-                    borderRadius: BorderRadius.circular(5)),
-                menuItems: snapshot.data!,
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      addBookmark();
-                    });
-                  },
-                  child: Stack(
-                    children: [
-                      AnimatedBuilder(
-                        animation: _colorTween,
-                        builder: (context, child) {
-                          return Icon(Icons.bookmark_outline,
-                              color: _colorTween.value, size: 42);
-                        },
-                      ),
-                      AnimatedOpacity(
-                        opacity: filledBookmarkIconOpacity,
-                        duration: Duration(milliseconds: 300),
-                        child: Icon(Icons.bookmark,
-                            color: Settings.colors[5], size: 42),
-                      )
-                    ],
-                  ),
-                ));
+            return GestureDetector(
+                onTap: () {
+                setState(() {
+                  addBookmark();
+                });
+              },
+              child: Stack(
+                children: [
+                    Stack(
+                      children: [
+                        AnimatedBuilder(
+                          animation: _colorTween,
+                          builder: (context, child) {
+                            return Icon(Icons.bookmark_outline,
+                                color: _colorTween.value, size: 42);
+                          },
+                        ),
+                        AnimatedOpacity(
+                          opacity: filledBookmarkIconOpacity,
+                          duration: Duration(milliseconds: 300),
+                          child: Icon(Icons.bookmark,
+                              color: Settings.colors[5], size: 42),
+                        )
+                      ],
+                    ),
+                  ]
+              )
+            );
+            // return FocusedMenuHolder(
+            //   // menuWidth: MediaQuery.of(context).size.width * 0.5,
+            //   onPressed: () {
+            //     print(true);
+            //   },
+            //   duration: Duration(milliseconds: 300),
+            //   menuBoxDecoration: BoxDecoration(
+            //       color: Settings.colors[2],
+            //       borderRadius: BorderRadius.circular(5)),
+            //   menuItems: snapshot.data!,
+            //   child: GestureDetector(
+            //     onTap: () {
+            //       setState(() {
+            //         addBookmark();
+            //       });
+            //     },
+            //     child: Stack(
+            //       children: [
+            //         AnimatedBuilder(
+            //           animation: _colorTween,
+            //           builder: (context, child) {
+            //             return Icon(Icons.bookmark_outline,
+            //                 color: _colorTween.value, size: 42);
+            //           },
+            //         ),
+            //         AnimatedOpacity(
+            //           opacity: filledBookmarkIconOpacity,
+            //           duration: Duration(milliseconds: 300),
+            //           child: Icon(Icons.bookmark,
+            //               color: Settings.colors[5], size: 42),
+            //         )
+            //       ],
+            //     ),
+            //   ),
+            // );
           } else {
             return Container();
           }
         });
   }
 }
-
-bool _sleepActive = false;
 
 class SleepTimerIcon extends StatefulWidget {
   // const SleepTimerIcon({Key key}) : super(key: key);
@@ -439,34 +540,18 @@ class SleepTimerIcon extends StatefulWidget {
 
 class _SleepTimerIconState extends State<SleepTimerIcon>
     with SingleTickerProviderStateMixin {
-  Timer? sleepTimer;
   Color color = Settings.colors[3];
 
   late AnimationController _animationController;
   late Animation<Color?> _colorTween;
 
-  void setSleep() {
-    // sleepTimer = Timer(Duration(minutes: Settings.sleepTimer), () {
-    //   if (AudioService.playbackState.playing){
-    //     DatabaseProvider.updateAudiobook(contentAudiobook.value);
-    //     AudioService.stop();
-    //   }
-    //   _animationController.animateTo(0);
-    // });
-  }
-
-  void cancelSleep() {
-    // if (sleepTimer != null ){
-    //   sleepTimer!.cancel();
-    // }
-  }
+  ValueNotifier<bool> sleep = ValueNotifier(false);
+  late Timer sleepTimer;
 
   @override
   void initState() {
-    _animationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-    _colorTween = ColorTween(begin: Settings.colors[3], end: Settings.colors[5])
-        .animate(_animationController);
+    _animationController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    _colorTween = ColorTween(begin: Settings.colors[3], end: Settings.colors[5]).animate(_animationController);
     super.initState();
   }
 
@@ -483,16 +568,31 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
         builder: (context, child) {
           return GestureDetector(
               onTap: () {
-                _sleepActive = !_sleepActive;
-                if (_sleepActive) {
-                  setSleep();
-                  _animationController.animateTo(100);
+                if (!sleep.value) {
+                  sleep.value = true;
+                  sleepTimer = Timer(Settings.sleep, () {
+                    sleep.value = false;
+                    if (AudioService.running) {
+                      AudioService.stop();
+                    }
+                  });
                 } else {
-                  cancelSleep();
-                  _animationController.animateTo(0);
+                  sleep.value = false;
+                  sleepTimer.cancel();
                 }
               },
-              child: Icon(Icons.timer, color: _colorTween.value, size: 42));
+              child: ValueListenableBuilder<bool>(
+                valueListenable: sleep,
+                builder: (context, value, _) {
+                  if (value) {
+                    _animationController.animateTo(100);
+                  } else {
+                    _animationController.animateTo(0);
+                  }
+                  return Icon(Icons.timer, color: _colorTween.value, size: 42);
+                }
+              )
+          );
         });
   }
 }

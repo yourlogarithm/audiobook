@@ -102,4 +102,5 @@ class DatabaseProvider {
     );
     return List.generate(maps.length, (index) => Bookmark.fromMap(maps[index]));
   }
+
 }

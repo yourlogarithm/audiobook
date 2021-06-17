@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:audiobook/classes/book.dart';
+import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/explorer.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
@@ -173,6 +174,7 @@ class FileExplorerAudio extends FileExplorer {
       cover = 'images/defaultcover.png';
     }
     Book book = Book(
+        id: books.isEmpty ? 1 : books.last.id! + 1,
         title: 'title',
         author: 'author',
         path: file.path,

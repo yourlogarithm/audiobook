@@ -56,7 +56,7 @@ class _HomePageState extends State<HomePage> {
                   heroTag: null,
                   onPressed: () {
                     Content.contentNavigatorKey.currentState!
-                        .pushNamed('/addBook');
+                        .pushReplacementNamed('/addBook');
                     bottomBarIndex.value = -1;
                   },
                   elevation: 0,
@@ -96,7 +96,7 @@ class _LibraryState extends State<Library> {
               onPressed: () {
                 bottomBarIndex.value = -1;
                 Content.contentNavigatorKey.currentState!
-                    .pushNamed('/changeCover', arguments: book);
+                    .pushReplacementNamed('/changeCover', arguments: book);
               },
               trailingIcon:
                   Icon(Icons.image_outlined, color: Settings.colors[3]),
@@ -175,7 +175,7 @@ class _LibraryState extends State<Library> {
             child: InkWell(
               onTap: () {
                 bottomBarIndex.value = -1;
-                Content.contentNavigatorKey.currentState!.pushNamed(
+                Content.contentNavigatorKey.currentState!.pushReplacementNamed(
                   '/bookPage',
                   arguments: book,
                 );

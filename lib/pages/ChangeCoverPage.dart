@@ -117,11 +117,11 @@ class FileExplorerImage extends FileExplorer {
                     return Container(
                         width: constraints.maxWidth,
                         decoration: BoxDecoration(
-                            color: Settings.theme == 'Dark'
+                            color: Settings.theme.value == 'Dark'
                                 ? Settings.colors[1]
                                 : Settings.colors[6],
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: Settings.theme == 'Dark'
+                            boxShadow: Settings.theme.value == 'Dark'
                                 ? [
                                     BoxShadow(
                                         color: Color.fromRGBO(0, 0, 0, 0.1),
@@ -147,7 +147,7 @@ class FileExplorerImage extends FileExplorer {
                                       _path == File(this.path.value).parent.path
                                           ? Icons.subdirectory_arrow_left
                                           : Icons.folder,
-                                      color: Settings.theme == 'Dark'
+                                      color: Settings.theme.value == 'Dark'
                                           ? Settings.colors[7]
                                           : Settings.colors[0],
                                       size: 40)
@@ -157,7 +157,7 @@ class FileExplorerImage extends FileExplorer {
                                       style: TextStyle(
                                           fontFamily: 'Open Sans',
                                           fontWeight: FontWeight.bold,
-                                          color: Settings.theme == 'Dark'
+                                          color: Settings.theme.value == 'Dark'
                                               ? Settings.colors[7]
                                               : Settings.colors[0]),
                                     ))),

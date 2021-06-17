@@ -18,13 +18,16 @@ class Book {
   late String cover;
 
   Book(
-      {required this.title,
+      {
+        required this.id,
+        required this.title,
       required this.author,
       required this.path,
       required this.length,
       required this.checkpoint,
       required this.defaultCover,
-      required this.cover});
+      required this.cover}
+      );
 
   Book.fromMap(Map<String, dynamic> map) {
     id = map['id'];
@@ -39,6 +42,7 @@ class Book {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'title': title,
       'author': author,
       'path': path,
@@ -102,7 +106,9 @@ class Book {
       }
     });
     if (!same) {
-      animatedLibraryList.currentState!.insertItem(books.length);
+      if (animatedLibraryList.currentState != null){
+        animatedLibraryList.currentState!.insertItem(books.length);
+      }
       books.add(this);
       homeLibraryEditNotifier.value = !homeLibraryEditNotifier.value;
       await db.insert('books', this.toMap(),
