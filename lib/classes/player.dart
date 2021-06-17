@@ -45,7 +45,7 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
   @override
   Future<void> onStart(Map<String, dynamic>? params) async {
     AudioServiceBackground.setState(
-        controls: [MediaControl.pause, MediaControl.stop, MediaControl.fastForward, MediaControl.rewind],
+        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.stop, MediaControl.fastForward],
         playing: true,
         processingState: AudioProcessingState.connecting
     );
@@ -54,7 +54,7 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
     MediaItem item = MediaItem(id: params['path'], album: params['author'], title: params['title'], artUri: Uri.file(params['cover']));
     await AudioServiceBackground.setMediaItem(item);
     AudioServiceBackground.setState(
-        controls: [MediaControl.pause, MediaControl.stop, MediaControl.fastForward, MediaControl.rewind],
+        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.stop, MediaControl.fastForward],
         playing: true,
         processingState: AudioProcessingState.ready
     );
@@ -67,7 +67,8 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
     await AudioServiceBackground.setState(
         controls: [],
         playing: false,
-        processingState: AudioProcessingState.stopped);
+        processingState: AudioProcessingState.stopped
+    );
     return super.onStop();
   }
 
@@ -75,9 +76,10 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
   Future<void> onPlay() {
     player.play();
     AudioServiceBackground.setState(
-        controls: [MediaControl.pause, MediaControl.stop, MediaControl.fastForward, MediaControl.rewind],
+        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.stop, MediaControl.fastForward],
         playing: true,
-        processingState: AudioProcessingState.ready);
+        processingState: AudioProcessingState.ready
+    );
     return super.onPlay();
   }
 
