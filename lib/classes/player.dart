@@ -101,16 +101,10 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
   }
 
   @override
-  Future<void> onPlayMediaItem(MediaItem mediaItem) {
-    // TODO: implement onPlayMediaItem
-    return super.onPlayMediaItem(mediaItem);
-  }
-  @override
   Future onCustomAction(String name, arguments) async {
     switch(name) {
       case 'pposition':
         return player.position.inSeconds;
-
     }
     return super.onCustomAction(name, arguments);
   }

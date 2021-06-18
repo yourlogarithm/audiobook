@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:audiobook/classes/database.dart';
 
@@ -31,8 +32,14 @@ class Bookmark {
         where: 'id = ?', whereArgs: [this.id]);
   }
 
-  Future<void> remove() async {
+  Future<List<Bookmark>> remove() async {
     Database db = await DatabaseProvider.getDatabase;
     await db.delete('bookmarks', where: 'id = ?', whereArgs: [this.id]);
+    List<Map<String, dynamic>> maps = await db.query(
+        'bookmarks',
+        where: 'bookTitle = ?',
+        whereArgs: [bookTitle]
+    );
+    return List.generate(maps.length, (index) => Bookmark.fromMap(maps[index]));
   }
 }

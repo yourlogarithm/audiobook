@@ -1,14 +1,17 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/bookmark.dart';
 import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/player.dart';
+import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:focused_menu/modals.dart';
+
+ValueNotifier<Widget> bookPageContextMenu = ValueNotifier(Container());
 
 class BookPage extends StatefulWidget {
   final Book book;
@@ -22,91 +25,128 @@ class _BookPageState extends State<BookPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Settings.colors[1],
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-              vertical: MediaQuery.of(context).size.height * 0.025),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(15),
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      height: MediaQuery.of(context).size.width * 0.8,
-                      decoration: BoxDecoration(
-                          color: Settings.colors[0],
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: Settings.theme.value == 'Dark'
-                              ? [
-                                  BoxShadow(
-                                      color: Color.fromRGBO(0, 0, 0, 0.1),
-                                      spreadRadius: 1,
-                                      blurRadius: 5)
-                                ]
-                              : []),
-                      child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: LayoutBuilder(
-                            builder: (layoutcontext, constraints) {
-                              return Container(
-                                height: constraints.maxHeight,
-                                child: widget.book.defaultCover
-                                    ? Image.asset(widget.book.cover,
-                                        fit: BoxFit.fill)
-                                    : Image.file(File(widget.book.cover),
-                                        fit: BoxFit.fill),
-                              );
-                            },
-                          )),
+      resizeToAvoidBottomInset: false,
+      body: Stack(
+        children: [
+          GestureDetector(
+            onTap: () {
+              bookPageContextMenu.value = Container();
+            },
+            child: ValueListenableBuilder(
+              valueListenable: bookPageContextMenu,
+              builder: (context, value, _) {
+                double amount = 0;
+                if (value.runtimeType != Container){
+                  amount = 0.7;
+                }
+                return ColorFiltered(
+                  colorFilter: ColorFilter.mode(Color.fromRGBO(0, 0, 0, amount), BlendMode.darken),
+                  child: Container(
+                    color: Settings.colors[1],
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height,
+                    child: SafeArea(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.025),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(15),
+                                    width: MediaQuery.of(context).size.width * 0.8,
+                                    height: MediaQuery.of(context).size.width * 0.8,
+                                    decoration: BoxDecoration(
+                                        color: Settings.colors[0],
+                                        borderRadius: BorderRadius.circular(25),
+                                        boxShadow: Settings.theme.value == 'Dark'
+                                        ? [
+                                        BoxShadow(
+                                            color: Color.fromRGBO(0, 0, 0, 0.1),
+                                            spreadRadius: 1,
+                                            blurRadius: 5)
+                                        ]
+                                            : []),
+                                    child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: LayoutBuilder(
+                                          builder: (layoutcontext, constraints) {
+                                            return Container(
+                                              height: constraints.maxHeight,
+                                              child: widget.book.defaultCover
+                                                  ? Image.asset(widget.book.cover,
+                                                  fit: BoxFit.fill)
+                                                  : Image.file(File(widget.book.cover),
+                                                  fit: BoxFit.fill),
+                                            );
+                                          },
+                                        )),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 20),
+                                    child: Timeline(book: widget.book),
+                                  ),
+                                ],
+                              ),
+                              AnimatedContainer(
+                                duration: Duration(milliseconds: 500),
+                                child: Column(
+                                  children: [
+                                    Text(widget.book.author,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 16,
+                                            color: Settings.colors[4])),
+                                    Text(
+                                      widget.book.title,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          color: Settings.colors[3],
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width * 0.9,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    BookmarkIcon(book: widget.book),
+                                    SleepTimerIcon(),
+                                    Lock()
+                                  ],
+                                ),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 20),
-                      child: Timeline(book: widget.book),
-                    ),
-                  ],
-                ),
-                AnimatedContainer(
-                  duration: Duration(milliseconds: 500),
-                  child: Column(
-                    children: [
-                      Text(widget.book.author,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              color: Settings.colors[4])),
-                      Text(
-                        widget.book.title,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: Settings.colors[3],
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20),
-                      )
-                    ],
                   ),
-                ),
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.9,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      BookmarkIcon(book: widget.book),
-                      SleepTimerIcon(),
-                      Lock()
-                    ],
-                  ),
-                )
-              ],
+                );
+              },
             ),
           ),
-        ),
+          Positioned(
+            width: MediaQuery.of(context).size.width * 0.6,
+            // height: MediaQuery.of(context).size.height * 0.25,
+            left: MediaQuery.of(context).size.width * 0.05,
+            bottom: MediaQuery.of(context).size.height * 0.1,
+            child: ValueListenableBuilder<Widget>(
+                valueListenable: bookPageContextMenu,
+                builder: (context, value, _) {
+                  return AnimatedSwitcher(duration: Duration(milliseconds: 500), child: value);
+                }
+            ),
+          )
+        ],
       ),
     );
   }
@@ -128,7 +168,10 @@ class _TimelineState extends State<Timeline> {
   Widget timelineControlButton(IconData icon, Function function) {
     return InkWell(
       customBorder: CircleBorder(),
-      onTap: () => function(),
+      onTap: () {
+      bookPageContextMenu.value = Container();
+        function();
+      },
       child: Icon(icon, color: Settings.colors[3], size: 42),
     );
   }
@@ -327,6 +370,8 @@ class TimelinePositionCirclePainter extends CustomPainter {
   }
 }
 
+GlobalKey bookmarkIconKey = GlobalKey();
+
 class BookmarkIcon extends StatefulWidget {
   final Book book;
   BookmarkIcon({required this.book});
@@ -363,7 +408,8 @@ class _BookmarkIconState extends State<BookmarkIcon>
       Bookmark bookmark = Bookmark(
           bookTitle: widget.book.title,
           title: convertDuration(widget.book.checkpoint),
-          time: widget.book.checkpoint);
+          time: widget.book.checkpoint
+      );
       bookmark.insert();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: Duration(seconds: 1),
@@ -390,146 +436,259 @@ class _BookmarkIconState extends State<BookmarkIcon>
     }
   }
 
-  Future<List<FocusedMenuItem>> getBookmarks() async {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          bookPageContextMenu.value = Container();
+          addBookmark();
+        });
+      },
+      onLongPress: () {
+        DatabaseProvider.getBookmarks(widget.book.title).then((value) {
+          if (value.isNotEmpty) {
+            setState(() {
+              bookPageContextMenu.value = ContextMenu(context: context, book: widget.book);
+            });
+          }
+        });
+      },
+      child: Stack(
+        key: bookmarkIconKey,
+        children: [
+          AnimatedBuilder(
+            animation: _colorTween,
+            builder: (context, child) {
+              return Icon(Icons.bookmark_outline, color: _colorTween.value, size: 42);
+              },
+          ),
+          AnimatedOpacity(
+            opacity: filledBookmarkIconOpacity,
+            duration: Duration(milliseconds: 300),
+            child: Icon(Icons.bookmark, color: Settings.colors[5], size: 42),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ContextMenu extends StatefulWidget {
+  final BuildContext context;
+  final Book book;
+  const ContextMenu({required this.context, required this.book});
+
+  @override
+  _ContextMenuState createState() => _ContextMenuState();
+}
+
+class _ContextMenuState extends State<ContextMenu> {
+
+  TextEditingController _textEditingController = TextEditingController();
+
+  Future<List<Widget>> getBookmarks() async {
     List<Bookmark> bookmarks = await DatabaseProvider.getBookmarks(widget.book.title);
-    List<FocusedMenuItem> output = [];
+    List<Widget> output = [];
     bookmarks.sort((a, b) => b.time.compareTo(a.time));
-    bookmarks.forEach((bookmark) {
-      output.add(FocusedMenuItem(
-          onPressed: () {},
-          backgroundColor: Settings.colors[1],
-          title: Container(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  bookmark.title,
-                  style: TextStyle(
-                      color: Settings.colors[3],
-                      fontFamily: 'Montserrat',
-                      fontWeight: FontWeight.w600),
+    for (int i = 0; i < bookmarks.length; i++){
+      print(bookmarks[i].title);
+      BoxDecoration decoration = BoxDecoration(color: Settings.colors[0]);
+      BorderRadius radius = BorderRadius.circular(0);
+      if (bookmarks.length == 1) {
+        radius = BorderRadius.circular(10);
+      } else if (i == 0){
+        radius = BorderRadius.vertical(top: Radius.circular(10));
+      } else if (i == bookmarks.length-1) {
+        radius = BorderRadius.vertical(bottom: Radius.circular(10));
+      }
+      decoration = BoxDecoration(
+          color: Settings.colors[0],
+          borderRadius: radius
+      );
+      output.add(
+          Container(
+            decoration: decoration,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: radius,
+                onTap: () {},
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          bookmarks[i].title,
+                          style: TextStyle(
+                              color: Settings.colors[3],
+                              fontFamily: 'Montserrat',
+                              fontWeight: FontWeight.w500
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: MediaQuery.of(widget.context).size.width * 0.2,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ClipOval(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    _textEditingController.text = bookmarks[i].title;
+                                    showDialog(context: context, builder: (context) {
+                                      return AlertDialog(
+                                        backgroundColor: Settings.colors[0],
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                                        actionsPadding: EdgeInsets.fromLTRB(0, 0, 20, 5),
+                                        contentPadding: EdgeInsets.fromLTRB(24, 20, 24, 12),
+                                        title: Text(
+                                          'Bookmark name',
+                                          style: TextStyle(
+                                              color: Settings.colors[3],
+                                              fontFamily: 'Poppins',
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        content: TextField(
+                                          controller: _textEditingController,
+                                          maxLength: 30,
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            color: Settings.colors[3]
+                                          ),
+                                          decoration: InputDecoration(
+                                            hintText: 'Edit your bookmark name...',
+                                            hintStyle: TextStyle(
+                                              fontFamily: 'Montserrat',
+                                              color: Settings.colors[4]
+                                            ),
+                                            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(width: 2, color: Settings.colors[6])),
+                                            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(width: 3, color: Settings.colors[6])),
+                                          ),
+                                        ),
+                                        actions: [
+                                          InkWell(
+                                            onTap: () => Navigator.pop(context),
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(4),
+                                              child: Text(
+                                                'Cancel',
+                                                style: TextStyle(
+                                                    color: Settings.colors[6],
+                                                    fontFamily: 'Poppins',
+                                                    fontWeight: FontWeight.w600
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          InkWell(
+                                            onTap: () {
+                                              String bookmarkTitle = _textEditingController.text;
+                                              if (bookmarkTitle.isNotEmpty){
+                                                bookmarks[i].title = bookmarkTitle;
+                                                bookmarks[i].update();
+                                              }
+                                              Navigator.pop(context);
+                                            },
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(4),
+                                              child: Text(
+                                                'Confirm',
+                                                style: TextStyle(
+                                                    color: Settings.colors[6],
+                                                    fontFamily: 'Poppins',
+                                                    fontWeight: FontWeight.w600
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        ],
+                                      );
+                                    }).whenComplete(() {
+                                      setState(() {
+                                        bookPageContextMenu.value = Container();
+                                      });
+                                    });
+                                  },
+                                  child: Icon(Icons.edit, color: Settings.colors[4], size: 26),
+                                ),
+                              ),
+                            ),
+                            ClipOval(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      bookmarks[i].remove().then((value){
+                                        if (value.isEmpty) {
+                                          setState(() {
+                                            bookPageContextMenu.value = Container();
+                                          });
+                                        }
+                                      });
+                                    });
+                                  },
+                                  child: Icon(Icons.delete, color: Color(0xffde4949),  size: 26),
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ClipOval(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: ClipOval(
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                bookmarks.remove(bookmark);
-                              });
-                              Navigator.pop(context);
-                              bookmark.remove();
-                            },
-                            child: Icon(Icons.edit_outlined, color: Settings.colors[4], size: 26),
-                          ),
-                        ),
-                      ),
-                    ),
-                    ClipOval(
-                      child: Material(
-                        color: Colors.transparent,
-                        child: ClipOval(
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                bookmarks.remove(bookmark);
-                              });
-                              Navigator.pop(context);
-                              bookmark.remove();
-                            },
-                            child: Icon(Icons.delete_outlined, color: Color(0xffde4949), size: 26),
-                          ),
-                        ),
-                      ),
-                    )
-                  ],
-                )
-              ],
+              ),
             ),
-          )));
-    });
+          )
+      );
+    }
     return output;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<FocusedMenuItem>>(
+    return FutureBuilder<List<Widget>>(
         future: getBookmarks(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return GestureDetector(
-                onTap: () {
-                setState(() {
-                  addBookmark();
-                });
-              },
-              child: Stack(
-                children: [
-                    Stack(
-                      children: [
-                        AnimatedBuilder(
-                          animation: _colorTween,
-                          builder: (context, child) {
-                            return Icon(Icons.bookmark_outline,
-                                color: _colorTween.value, size: 42);
-                          },
-                        ),
-                        AnimatedOpacity(
-                          opacity: filledBookmarkIconOpacity,
-                          duration: Duration(milliseconds: 300),
-                          child: Icon(Icons.bookmark,
-                              color: Settings.colors[5], size: 42),
-                        )
-                      ],
+        builder: (context, snapshot){
+          if (snapshot.hasData){
+            if (snapshot.data!.isNotEmpty){
+              return Container(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
+                  decoration: BoxDecoration(
+                    color: Settings.colors[2],
+                    borderRadius: BorderRadius.circular(10)
+                  ),
+                  child: ScrollConfiguration(
+                    behavior: MyBehavior(),
+                    child: GridView.count(
+                      shrinkWrap: true,
+                      crossAxisCount: 1,
+                      childAspectRatio: 4,
+                      mainAxisSpacing: 1,
+                      padding: EdgeInsets.all(0),
+                      children: snapshot.data!,
                     ),
-                  ]
-              )
-            );
-            // return FocusedMenuHolder(
-            //   // menuWidth: MediaQuery.of(context).size.width * 0.5,
-            //   onPressed: () {
-            //     print(true);
-            //   },
-            //   duration: Duration(milliseconds: 300),
-            //   menuBoxDecoration: BoxDecoration(
-            //       color: Settings.colors[2],
-            //       borderRadius: BorderRadius.circular(5)),
-            //   menuItems: snapshot.data!,
-            //   child: GestureDetector(
-            //     onTap: () {
-            //       setState(() {
-            //         addBookmark();
-            //       });
-            //     },
-            //     child: Stack(
-            //       children: [
-            //         AnimatedBuilder(
-            //           animation: _colorTween,
-            //           builder: (context, child) {
-            //             return Icon(Icons.bookmark_outline,
-            //                 color: _colorTween.value, size: 42);
-            //           },
-            //         ),
-            //         AnimatedOpacity(
-            //           opacity: filledBookmarkIconOpacity,
-            //           duration: Duration(milliseconds: 300),
-            //           child: Icon(Icons.bookmark,
-            //               color: Settings.colors[5], size: 42),
-            //         )
-            //       ],
-            //     ),
-            //   ),
-            // );
+                  )
+              );
+            } else {
+              return Container();
+            }
           } else {
             return Container();
           }
-        });
+        }
+    );
   }
 }
+
 
 class SleepTimerIcon extends StatefulWidget {
   // const SleepTimerIcon({Key key}) : super(key: key);
@@ -568,6 +727,7 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
         builder: (context, child) {
           return GestureDetector(
               onTap: () {
+                bookPageContextMenu.value = Container();
                 if (!sleep.value) {
                   sleep.value = true;
                   sleepTimer = Timer(Settings.sleep, () {
@@ -638,6 +798,7 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
       builder: (context, child) {
         return GestureDetector(
             onTap: () {
+              bookPageContextMenu.value = Container();
               _isLocked.value = !_isLocked.value;
               if (_isLocked.value) {
                 _animationController.animateTo(100);

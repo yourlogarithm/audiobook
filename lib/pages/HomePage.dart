@@ -264,7 +264,10 @@ class _LibraryState extends State<Library> {
                       initialItemCount: containers.length,
                       itemBuilder: (context, index, animation) {
                         return containers[index];
-                      })));
+                      }
+                  )
+              )
+          );
         });
   }
 }

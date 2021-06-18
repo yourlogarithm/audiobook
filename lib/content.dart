@@ -14,6 +14,7 @@ void moveHome() {
   _defaultPage.value = true;
   bottomBarIndex.value = 1;
   Content.contentNavigatorKey.currentState!.pushReplacementNamed('/');
+  bookPageContextMenu.value = Container();
 }
 
 class Content extends StatefulWidget {
@@ -97,6 +98,7 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
               return false;
             },
             child: Scaffold(
+              resizeToAvoidBottomInset: false,
               body: Stack(
                 children: [
                   Container(
