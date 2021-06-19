@@ -181,7 +181,7 @@ class _SleepTimerState extends State<SleepTimer> {
               onChanged: (value) => setState(() => duration = value),
               value: duration,
               itemWidth: 70,
-              minValue: 2,
+              minValue: 1,
               maxValue: 120,
               axis: Axis.horizontal,
               textStyle: TextStyle(

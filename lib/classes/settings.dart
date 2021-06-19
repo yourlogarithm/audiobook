@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -17,6 +18,7 @@ class Settings {
   static late String defaultFolder;
   static late List<Color> colors;
   static late String selectedBookPath;
+  static late File defaultImage;
 
   static Future<void> init() async {
     dir = await getApplicationDocumentsDirectory();
@@ -45,6 +47,11 @@ class Settings {
     forceStop = Duration(hours: 2);
     defaultFolder = '/storage/emulated/0';
     selectedBookPath = '';
+    defaultImage = File(dir.path + '/' + 'defaultCover.png');
+    defaultImage.create(recursive: true);
+    ByteData defaultImageData = await rootBundle.load('images/defaultcover.png');
+    List<int> bytes = defaultImageData.buffer.asUint8List(defaultImageData.offsetInBytes, defaultImageData.lengthInBytes);
+    defaultImage.writeAsBytes(bytes);
     setColors(theme.value);
     fileContent = toMap();
     file.create().whenComplete(() {

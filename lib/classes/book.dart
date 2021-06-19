@@ -124,7 +124,6 @@ class Book {
 
   Future<void> update() async {
     Database db = await DatabaseProvider.getDatabase;
-    await db
-        .update('books', this.toMap(), where: 'id = ?', whereArgs: [this.id]);
+    await db.update('books', this.toMap(), where: 'id = ?', whereArgs: [this.id]);
   }
 }

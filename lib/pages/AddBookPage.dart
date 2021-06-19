@@ -171,7 +171,7 @@ class FileExplorerAudio extends FileExplorer {
     }
     if (cover == null) {
       defaultCover = true;
-      cover = 'images/defaultcover.png';
+      cover = Settings.dir.path + '/' + 'defaultCover.png';
     }
     Book book = Book(
         id: books.isEmpty ? 1 : books.last.id! + 1,

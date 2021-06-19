@@ -9,6 +9,7 @@ import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 ValueNotifier<Widget> bookPageContextMenu = ValueNotifier(Container());
@@ -76,11 +77,7 @@ class _BookPageState extends State<BookPage> {
                                           builder: (layoutcontext, constraints) {
                                             return Container(
                                               height: constraints.maxHeight,
-                                              child: widget.book.defaultCover
-                                                  ? Image.asset(widget.book.cover,
-                                                  fit: BoxFit.fill)
-                                                  : Image.file(File(widget.book.cover),
-                                                  fit: BoxFit.fill),
+                                              child: Image.file(File(widget.book.cover), fit: BoxFit.fill),
                                             );
                                           },
                                         )),
@@ -175,21 +172,25 @@ class _TimelineState extends State<Timeline> {
       child: Icon(icon, color: Settings.colors[3], size: 42),
     );
   }
-
+  int amount = 0;
   @override
   Widget build(BuildContext context) {
+    double _width = MediaQuery.of(context).size.width * 0.8;
     return Container(
-      width: MediaQuery.of(context).size.width * 0.85,
+      width: _width,
       child: StreamBuilder<Duration>(
         stream: AudioService.positionStream,
         builder: (context, snapshot) {
           Duration _position = widget.book.checkpoint;
-          if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path){
+          if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path && AudioService.running){
             AudioService.customAction('pposition').then((value) {
-              _position = Duration(seconds: value);
-              widget.book.checkpoint = _position;
-              if (_position == widget.book.length){
-                AudioService.stop();
+              if (value != null) {
+                _position = Duration(seconds: value);
+                widget.book.checkpoint = _position;
+                if (_position >= widget.book.length){
+                  AudioService.seekTo(widget.book.length);
+                  AudioService.stop();
+                }
               }
             });
             widget.book.update();
@@ -215,24 +216,47 @@ class _TimelineState extends State<Timeline> {
                   ],
                 ),
               ),
-              Stack(
-                children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.85,
-                    child: CustomPaint(
-                      foregroundPainter: TimelinePainter(Settings.colors[5], MediaQuery.of(context).size.width * 0.85),
+              Container(
+                height: 20,
+                child: Stack(
+                  children: [
+                    Container(
+                      width: _width,
+                      child: CustomPaint(
+                        foregroundPainter: TimelinePainter(Settings.colors[5], _width),
+                      ),
                     ),
-                  ),
-                  Container(
-                    width: MediaQuery.of(context).size.width * 0.85,
-                    child: CustomPaint(
-                      foregroundPainter: TimelinePainter(Settings.colors[6], (_position.inSeconds * MediaQuery.of(context).size.width * 0.85) / widget.book.length.inSeconds),
+                    Container(
+                      width: _width,
+                      child: CustomPaint(
+                        foregroundPainter: TimelinePainter(Settings.colors[6], (_position.inSeconds * _width) / widget.book.length.inSeconds),
+                      ),
                     ),
-                  ),
-                  CustomPaint(
-                    foregroundPainter: TimelinePositionCirclePainter((_position.inSeconds * MediaQuery.of(context).size.width * 0.85) / widget.book.length.inSeconds),
-                  )
-                ],
+                    Positioned(
+                      left: (_position.inSeconds * _width) / widget.book.length.inSeconds - 25,
+                      child: GestureDetector(
+                        onPanUpdate: (details) {
+                          setState(() {
+                            widget.book.checkpoint = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
+                          });
+                          if (AudioService.running) {
+                            AudioService.seekTo(widget.book.checkpoint).whenComplete(() => setState(() {}));
+                          }
+                        },
+                        onPanEnd: (details) {
+                          widget.book.update();
+                        },
+                        child: Container(
+                          color: Colors.transparent,
+                          child: CustomPaint(
+                            size: Size(50, 20),
+                            foregroundPainter: TimelinePositionCirclePainter(25),
+                          ),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
               ),
               ValueListenableBuilder<bool>(
                   valueListenable: _isLocked,
@@ -264,19 +288,9 @@ class _TimelineState extends State<Timeline> {
                               !value
                                   ? timelineControlButton(
                                       Icons.fast_rewind_outlined, () {
-                                          if (AudioService.running) {
-                                            Duration edited = _position-Settings.rewind;
-                                            AudioService.rewind();
-                                            widget.book.checkpoint = edited;
-                                            widget.book.update();
-                                          } else {
-                                            setState(() {
-                                              widget.book.checkpoint -= Settings.rewind;
-                                              if (widget.book.checkpoint < widget.book.length){
-                                                widget.book.checkpoint = Duration(seconds: 0);
-                                              }
-                                            });
-                                          }
+                                        setState(() {
+                                          forwardRewind(widget.book, forward: false);
+                                        });
                                   })
                                   : Container(),
                               !value
@@ -297,19 +311,9 @@ class _TimelineState extends State<Timeline> {
                               !value
                                   ? timelineControlButton(
                                       Icons.fast_forward_outlined, () {
-                                        if (AudioService.running) {
-                                          Duration edited = _position+Settings.rewind;
-                                          AudioService.fastForward();
-                                          widget.book.checkpoint = edited;
-                                          widget.book.update();
-                                        } else {
-                                          setState(() {
-                                            widget.book.checkpoint += Settings.rewind;
-                                            if (widget.book.checkpoint > widget.book.length){
-                                              widget.book.checkpoint = widget.book.length;
-                                            }
-                                          });
-                                        }
+                                        setState(() {
+                                          forwardRewind(widget.book, forward: true);
+                                        });
                                       })
                                   : Container(),
                               !value
@@ -342,7 +346,7 @@ class TimelinePainter extends CustomPainter {
     final paint = Paint()
       ..color = color
       ..strokeWidth = 2.5;
-    canvas.drawLine(Offset(0, 0), Offset(x, 0), paint);
+    canvas.drawLine(Offset(0, 10), Offset(x, 10), paint);
   }
 
   @override
@@ -361,7 +365,7 @@ class TimelinePositionCirclePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Settings.colors[6];
-    canvas.drawCircle(Offset(x, 0), 5.5, paint);
+    canvas.drawCircle(Offset(x, 10), 5.5, paint);
   }
 
   @override
@@ -492,7 +496,6 @@ class _ContextMenuState extends State<ContextMenu> {
     List<Widget> output = [];
     bookmarks.sort((a, b) => b.time.compareTo(a.time));
     for (int i = 0; i < bookmarks.length; i++){
-      print(bookmarks[i].title);
       BoxDecoration decoration = BoxDecoration(color: Settings.colors[0]);
       BorderRadius radius = BorderRadius.circular(0);
       if (bookmarks.length == 1) {
@@ -513,7 +516,16 @@ class _ContextMenuState extends State<ContextMenu> {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: radius,
-                onTap: () {},
+                onTap: () {
+                  widget.book.checkpoint = bookmarks[i].time;
+                  if (AudioService.running){
+                    AudioService.seekTo(bookmarks[i].time);
+                  }
+                  widget.book.update();
+                  setState(() {
+                    bookPageContextMenu.value = Container();
+                  });
+                },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
@@ -704,9 +716,6 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
   late AnimationController _animationController;
   late Animation<Color?> _colorTween;
 
-  ValueNotifier<bool> sleep = ValueNotifier(false);
-  late Timer sleepTimer;
-
   @override
   void initState() {
     _animationController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
@@ -716,8 +725,8 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
 
   @override
   void dispose() {
-    super.dispose();
     _animationController.dispose();
+    super.dispose();
   }
 
   @override
@@ -728,18 +737,7 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
           return GestureDetector(
               onTap: () {
                 bookPageContextMenu.value = Container();
-                if (!sleep.value) {
-                  sleep.value = true;
-                  sleepTimer = Timer(Settings.sleep, () {
-                    sleep.value = false;
-                    if (AudioService.running) {
-                      AudioService.stop();
-                    }
-                  });
-                } else {
-                  sleep.value = false;
-                  sleepTimer.cancel();
-                }
+                setSleep();
               },
               child: ValueListenableBuilder<bool>(
                 valueListenable: sleep,
@@ -774,10 +772,8 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
 
   @override
   void initState() {
-    _animationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
-    _colorTween = ColorTween(begin: Settings.colors[3], end: Settings.colors[5])
-        .animate(_animationController);
+    _animationController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    _colorTween = ColorTween(begin: Settings.colors[3], end: Settings.colors[5]).animate(_animationController);
     if (_isLocked.value) {
       icon = Icons.lock_outline;
       _animationController.animateTo(100);

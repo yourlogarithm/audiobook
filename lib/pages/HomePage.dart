@@ -95,8 +95,7 @@ class _LibraryState extends State<Library> {
           FocusedMenuItem(
               onPressed: () {
                 bottomBarIndex.value = -1;
-                Content.contentNavigatorKey.currentState!
-                    .pushReplacementNamed('/changeCover', arguments: book);
+                Content.contentNavigatorKey.currentState!.pushReplacementNamed('/changeCover', arguments: book);
               },
               trailingIcon:
                   Icon(Icons.image_outlined, color: Settings.colors[3]),
@@ -195,13 +194,7 @@ class _LibraryState extends State<Library> {
                             builder: (context, constraints) {
                               return Container(
                                 height: constraints.maxHeight,
-                                child: book.defaultCover
-                                    ? Image.asset(
-                                        book.cover,
-                                        fit: BoxFit.fill,
-                                      )
-                                    : Image.file(File(book.cover),
-                                        fit: BoxFit.fill),
+                                child: Image.file(File(book.cover), fit: BoxFit.fill),
                               );
                             },
                           )),

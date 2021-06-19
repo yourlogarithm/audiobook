@@ -1,11 +1,14 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/material.dart';
 
 String playerUrl = '';
+
+ValueNotifier<bool> sleep = ValueNotifier(false);
+late Timer sleepTimer;
 
 backgroundTaskEntrypoint() {
   AudioServiceBackground.run(() => MyAudioPlayerTask());
@@ -39,13 +42,39 @@ void playBook(Book book) async {
     }
   }
 }
+void forwardRewind(Book book, {bool forward = false}){
+  Duration edited = forward ? book.checkpoint+Settings.rewind : book.checkpoint-Settings.rewind;
+  if (edited < Duration(seconds: 0)) {
+    edited = Duration(seconds: 0);
+  } else if (edited > book.length){
+    edited = book.length;
+  }
+  book.checkpoint = edited;
+  if (AudioService.running){
+    AudioService.seekTo(edited);
+  }
+  book.update();
+}
+void setSleep() {
+  if (!sleep.value) {
+    sleepTimer = Timer(Settings.sleep, () {
+      sleep.value = false;
+      if (AudioService.running) {
+        AudioService.stop();
+      }
+    });
+  } else {
+    sleepTimer.cancel();
+  }
+  sleep.value = !sleep.value;
+}
 
 class MyAudioPlayerTask extends BackgroundAudioTask {
   static AudioPlayer player = AudioPlayer();
   @override
   Future<void> onStart(Map<String, dynamic>? params) async {
     AudioServiceBackground.setState(
-        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.stop, MediaControl.fastForward],
+        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.fastForward],
         playing: true,
         processingState: AudioProcessingState.connecting
     );
@@ -54,21 +83,20 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
     MediaItem item = MediaItem(id: params['path'], album: params['author'], title: params['title'], artUri: Uri.file(params['cover']));
     await AudioServiceBackground.setMediaItem(item);
     AudioServiceBackground.setState(
-        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.stop, MediaControl.fastForward],
+        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.fastForward],
         playing: true,
         processingState: AudioProcessingState.ready
     );
-    // return super.onStart(params);
   }
 
   @override
   Future<void> onStop() async {
-    player.stop();
     await AudioServiceBackground.setState(
         controls: [],
         playing: false,
         processingState: AudioProcessingState.stopped
     );
+    await player.stop();
     return super.onStop();
   }
 
@@ -76,7 +104,7 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
   Future<void> onPlay() {
     player.play();
     AudioServiceBackground.setState(
-        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.stop, MediaControl.fastForward],
+        controls: [MediaControl.rewind, MediaControl.pause, MediaControl.fastForward],
         playing: true,
         processingState: AudioProcessingState.ready
     );
@@ -97,7 +125,16 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
   @override
   Future<void> onSeekTo(Duration position) async {
     await player.seek(position);
-    return super.onSeekTo(position);
+  }
+
+  @override
+  Future<void> onRewind() async {
+    return super.onRewind();
+  }
+
+  @override
+  Future<void> onFastForward() async {
+    return super.onFastForward();
   }
 
   @override
@@ -107,18 +144,5 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
         return player.position.inSeconds;
     }
     return super.onCustomAction(name, arguments);
-  }
-
-  @override
-  Future<void> onRewind() async {
-    // await player.seek(player.position - Settings.rewind);
-    return super.onRewind();
-  }
-
-  @override
-  Future<void> onFastForward() async {
-    print(Settings);
-    // await player.seek(player.position + Settings.rewind);
-    return super.onFastForward();
   }
 }
