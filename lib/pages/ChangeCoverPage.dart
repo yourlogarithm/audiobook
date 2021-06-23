@@ -55,7 +55,7 @@ class _ChangeCoverPageState extends State<ChangeCoverPage> {
         ),
         Container(
           width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height * 0.82,
+          height: MediaQuery.of(context).size.height * 0.9,
           color: Settings.colors[2],
           child: Container(
               decoration: BoxDecoration(

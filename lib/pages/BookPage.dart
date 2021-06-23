@@ -9,7 +9,6 @@ import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 ValueNotifier<Widget> bookPageContextMenu = ValueNotifier(Container());
@@ -70,7 +69,8 @@ class _BookPageState extends State<BookPage> {
                                             spreadRadius: 1,
                                             blurRadius: 5)
                                         ]
-                                            : []),
+                                            : []
+                                    ),
                                     child: ClipRRect(
                                         borderRadius: BorderRadius.circular(20),
                                         child: LayoutBuilder(
@@ -84,16 +84,20 @@ class _BookPageState extends State<BookPage> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.only(top: 20),
-                                    child: Timeline(book: widget.book),
+                                    child: BookPageTimeline(book: widget.book),
                                   ),
                                 ],
                               ),
                               AnimatedContainer(
                                 duration: Duration(milliseconds: 500),
+                                width: MediaQuery.of(context).size.width * 0.9,
                                 child: Column(
                                   children: [
-                                    Text(widget.book.author,
+                                    Text(
+                                        widget.book.author,
                                         textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                             fontFamily: 'Poppins',
                                             fontSize: 16,
@@ -101,6 +105,8 @@ class _BookPageState extends State<BookPage> {
                                     Text(
                                       widget.book.title,
                                       textAlign: TextAlign.center,
+                                      maxLines: 4,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                           color: Settings.colors[3],
                                           fontFamily: 'Poppins',
@@ -146,231 +152,6 @@ class _BookPageState extends State<BookPage> {
         ],
       ),
     );
-  }
-}
-
-class Timeline extends StatefulWidget {
-  final Book book;
-  Timeline({required this.book});
-
-  @override
-  _TimelineState createState() => _TimelineState();
-}
-
-class _TimelineState extends State<Timeline> {
-  double buttonsTopPadding = 0.025;
-  double buttonsHeight = 0.075;
-  double buttonsOpacity = 1;
-
-  Widget timelineControlButton(IconData icon, Function function) {
-    return InkWell(
-      customBorder: CircleBorder(),
-      onTap: () {
-      bookPageContextMenu.value = Container();
-        function();
-      },
-      child: Icon(icon, color: Settings.colors[3], size: 42),
-    );
-  }
-  int amount = 0;
-  @override
-  Widget build(BuildContext context) {
-    double _width = MediaQuery.of(context).size.width * 0.8;
-    return Container(
-      width: _width,
-      child: StreamBuilder<Duration>(
-        stream: AudioService.positionStream,
-        builder: (context, snapshot) {
-          Duration _position = widget.book.checkpoint;
-          if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path && AudioService.running){
-            AudioService.customAction('pposition').then((value) {
-              if (value != null) {
-                _position = Duration(seconds: value);
-                widget.book.checkpoint = _position;
-                if (_position >= widget.book.length){
-                  AudioService.seekTo(widget.book.length);
-                  AudioService.stop();
-                }
-              }
-            });
-            widget.book.update();
-          }
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                          convertDuration(_position),
-                          style: TextStyle(
-                              color: Settings.colors[4], fontFamily: 'Poppins'),
-                    ),
-                    Text(
-                      convertDuration(widget.book.length),
-                      style: TextStyle(
-                          color: Settings.colors[4], fontFamily: 'Poppins'
-                      ),
-                    )
-                  ],
-                ),
-              ),
-              Container(
-                height: 20,
-                child: Stack(
-                  children: [
-                    Container(
-                      width: _width,
-                      child: CustomPaint(
-                        foregroundPainter: TimelinePainter(Settings.colors[5], _width),
-                      ),
-                    ),
-                    Container(
-                      width: _width,
-                      child: CustomPaint(
-                        foregroundPainter: TimelinePainter(Settings.colors[6], (_position.inSeconds * _width) / widget.book.length.inSeconds),
-                      ),
-                    ),
-                    Positioned(
-                      left: (_position.inSeconds * _width) / widget.book.length.inSeconds - 25,
-                      child: GestureDetector(
-                        onPanUpdate: (details) {
-                          setState(() {
-                            widget.book.checkpoint = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
-                          });
-                          if (AudioService.running) {
-                            AudioService.seekTo(widget.book.checkpoint).whenComplete(() => setState(() {}));
-                          }
-                        },
-                        onPanEnd: (details) {
-                          widget.book.update();
-                        },
-                        child: Container(
-                          color: Colors.transparent,
-                          child: CustomPaint(
-                            size: Size(50, 20),
-                            foregroundPainter: TimelinePositionCirclePainter(25),
-                          ),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-              ValueListenableBuilder<bool>(
-                  valueListenable: _isLocked,
-                  builder: (context, value, _) {
-                    if (value) {
-                      buttonsTopPadding = 0;
-                      buttonsHeight = 0;
-                      buttonsOpacity = 0;
-                    } else {
-                      buttonsTopPadding = 0.005;
-                      buttonsHeight = 0.075;
-                      buttonsOpacity = 1;
-                    }
-                    return AnimatedContainer(
-                      height: MediaQuery.of(context).size.height * buttonsHeight,
-                      padding: EdgeInsets.only(
-                          top: MediaQuery.of(context).size.height * buttonsTopPadding),
-                      duration: Duration(milliseconds: 500),
-                      child: AnimatedOpacity(
-                        opacity: buttonsOpacity,
-                        duration: Duration(milliseconds: 500),
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              !value
-                                  ? timelineControlButton(
-                                      Icons.skip_previous_outlined, () {})
-                                  : Container(),
-                              !value
-                                  ? timelineControlButton(
-                                      Icons.fast_rewind_outlined, () {
-                                        setState(() {
-                                          forwardRewind(widget.book, forward: false);
-                                        });
-                                  })
-                                  : Container(),
-                              !value
-                                  ? StreamBuilder<PlaybackState>(
-                                      stream: AudioService.playbackStateStream,
-                                      builder: (context, snapshot) {
-                                        IconData icon = Icons.play_arrow;
-                                        if (snapshot.hasData) {
-                                          if (snapshot.data!.playing && playerUrl == widget.book.path) {
-                                            icon = Icons.pause;
-                                          }
-                                        }
-                                        return timelineControlButton(icon, () {
-                                          playBook(widget.book);
-                                        });
-                                      })
-                                  : Container(),
-                              !value
-                                  ? timelineControlButton(
-                                      Icons.fast_forward_outlined, () {
-                                        setState(() {
-                                          forwardRewind(widget.book, forward: true);
-                                        });
-                                      })
-                                  : Container(),
-                              !value
-                                  ? timelineControlButton(
-                                      Icons.skip_next_outlined, () {})
-                                  : Container(),
-                            ]),
-                      ),
-                    );
-                  })
-            ],
-          );
-        }
-      ),
-    );
-  }
-}
-
-class TimelinePainter extends CustomPainter {
-  late Color color;
-  late double x;
-
-  TimelinePainter(Color ccolor, double cx) {
-    color = ccolor;
-    x = cx;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.5;
-    canvas.drawLine(Offset(0, 10), Offset(x, 10), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
-}
-
-class TimelinePositionCirclePainter extends CustomPainter {
-  late double x;
-
-  TimelinePositionCirclePainter(double arg) {
-    x = arg;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Settings.colors[6];
-    canvas.drawCircle(Offset(x, 10), 5.5, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
   }
 }
 
@@ -574,6 +355,10 @@ class _ContextMenuState extends State<ContextMenu> {
                                           ),
                                           decoration: InputDecoration(
                                             hintText: 'Edit your bookmark name...',
+                                            counterStyle: TextStyle(
+                                              fontFamily: 'Montserrat',
+                                              color: Settings.colors[4]
+                                            ),
                                             hintStyle: TextStyle(
                                               fontFamily: 'Montserrat',
                                               color: Settings.colors[4]
@@ -755,7 +540,7 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
   }
 }
 
-ValueNotifier<bool> _isLocked = ValueNotifier(false);
+ValueNotifier<bool> bookPageIsLocked = ValueNotifier(false);
 
 class Lock extends StatefulWidget {
   // const Lock({Key key}) : super(key: key);
@@ -774,7 +559,7 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
   void initState() {
     _animationController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
     _colorTween = ColorTween(begin: Settings.colors[3], end: Settings.colors[5]).animate(_animationController);
-    if (_isLocked.value) {
+    if (bookPageIsLocked.value) {
       icon = Icons.lock_outline;
       _animationController.animateTo(100);
     }
@@ -795,8 +580,8 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
         return GestureDetector(
             onTap: () {
               bookPageContextMenu.value = Container();
-              _isLocked.value = !_isLocked.value;
-              if (_isLocked.value) {
+              bookPageIsLocked.value = !bookPageIsLocked.value;
+              if (bookPageIsLocked.value) {
                 _animationController.animateTo(100);
                 setState(() {
                   icon = Icons.lock_outline;
@@ -812,19 +597,4 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
       },
     );
   }
-}
-
-String convertDuration(Duration duration) {
-  String inHours = duration.inHours.toString();
-  String inMinutes = (duration.inMinutes % 60).toString();
-  String inSeconds = (duration.inSeconds % 60).toString();
-  List<String> time = [inHours, inMinutes, inSeconds];
-  for (int i = 0; i < time.length; i++) {
-    if (time[i].length == 1) {
-      time[i] = '0' + time[i];
-    }
-  }
-  return time[0] == '00'
-      ? '${time[1]}:${time[2]}'
-      : '${time[0]}:${time[1]}:${time[2]}';
 }

@@ -1,5 +1,6 @@
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/bookmark.dart';
+import 'package:audiobook/classes/settings.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:io';
 
@@ -21,7 +22,7 @@ class DatabaseProvider {
 
     return await openDatabase(
         '$dbPath/audiobook.db',
-        version: 3,
+        version: 4,
         onCreate: (Database db, int version) async {
           await db.execute(
               'CREATE TABLE books('
@@ -29,7 +30,8 @@ class DatabaseProvider {
                   'title TEXT, author TEXT, '
                   'path TEXT, length INTEGER, '
                   'defaultCover INTEGER, cover TEXT, '
-                  'checkpoint INTEGER'
+                  'checkpoint INTEGER, '
+                  'status STRING'
                   ')'
           );
           await db.execute(
@@ -51,19 +53,23 @@ class DatabaseProvider {
       List<Map<String, dynamic>> ready = [];
       for (int i = 0; i < maps.length; i++){
         Map<String, dynamic> newMap = {};
-        newMap['id'] = maps[i]['id'];
-        newMap['title'] = maps[i]['title'];
-        newMap['author'] = maps[i]['author'];
-        newMap['path'] = maps[i]['path'];
-        newMap['length'] = maps[i]['length'];
-        newMap['checkpoint'] = maps[i]['checkpoint'];
+        maps[i].forEach((key, value) {
+          newMap[key] = value;
+        });
+        // newMap['id'] = maps[i]['id'];
+        // newMap['title'] = maps[i]['title'];
+        // newMap['author'] = maps[i]['author'];
+        // newMap['path'] = maps[i]['path'];
+        // newMap['length'] = maps[i]['length'];
+        // newMap['checkpoint'] = maps[i]['checkpoint'];
+        // newMap['status'] = maps[i]['status'];
         if (await File(newMap['path']).exists()){
           bool edited = false;
           if (maps[i]['defaultCover'] == 0){
             if (!await File(maps[i]['cover']).exists()){
               edited = true;
               newMap['defaultCover'] = 1;
-              newMap['cover'] = 'images/defaultcover.png';
+              newMap['cover'] = '${Settings.dir.path}/defaultcover.png';
               await db.update(
                   'books',
                   newMap,

@@ -19,6 +19,7 @@ class Settings {
   static late List<Color> colors;
   static late String selectedBookPath;
   static late File defaultImage;
+  static late ValueNotifier<int> lastListenedBook;
 
   static Future<void> init() async {
     dir = await getApplicationDocumentsDirectory();
@@ -33,6 +34,7 @@ class Settings {
       forceStop = Duration(hours: fileContent['forceStop']);
       defaultFolder = fileContent['defaultFolder'];
       selectedBookPath = fileContent['selectedBookPath'];
+      lastListenedBook = ValueNotifier(fileContent['lastListenedBook']);
       setColors(theme.value);
     } else {
       await createFile();
@@ -47,6 +49,7 @@ class Settings {
     forceStop = Duration(hours: 2);
     defaultFolder = '/storage/emulated/0';
     selectedBookPath = '';
+    lastListenedBook = ValueNotifier(-1);
     defaultImage = File(dir.path + '/' + 'defaultCover.png');
     defaultImage.create(recursive: true);
     ByteData defaultImageData = await rootBundle.load('images/defaultcover.png');
@@ -72,7 +75,8 @@ class Settings {
       'rewind': rewind.inSeconds,
       'forceStop': forceStop.inHours,
       'defaultFolder': defaultFolder,
-      'selectedBookPath': selectedBookPath
+      'selectedBookPath': selectedBookPath,
+      'lastListenedBook': lastListenedBook.value
     };
   }
 

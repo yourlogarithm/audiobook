@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:audiobook/classes/database.dart';
+import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/pages/HomePage.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,18 +17,19 @@ class Book {
   late Duration checkpoint;
   late bool defaultCover;
   late String cover;
+  late String status;
 
-  Book(
-      {
-        required this.id,
-        required this.title,
-      required this.author,
-      required this.path,
-      required this.length,
-      required this.checkpoint,
-      required this.defaultCover,
-      required this.cover}
-      );
+  Book({
+    required this.id,
+    required this.title,
+    required this.author,
+    required this.path,
+    required this.length,
+    required this.checkpoint,
+    required this.defaultCover,
+    required this.cover,
+    required this.status
+  });
 
   Book.fromMap(Map<String, dynamic> map) {
     id = map['id'];
@@ -38,6 +40,7 @@ class Book {
     checkpoint = Duration(seconds: map['checkpoint']);
     defaultCover = map['defaultCover'] == 1 ? true : false;
     cover = map['cover'];
+    status = map['status'];
   }
 
   Map<String, dynamic> toMap() {
@@ -49,7 +52,8 @@ class Book {
       'length': length.inSeconds,
       'checkpoint': checkpoint.inSeconds,
       'defaultCover': defaultCover ? 1 : 0,
-      'cover': cover
+      'cover': cover,
+      'status': status
     };
   }
 
@@ -81,7 +85,7 @@ class Book {
 
   Future<void> setDefaultCover() async {
     defaultCover = true;
-    cover = 'images/defaultcover.png';
+    cover = Settings.dir.path + '/' + 'defaultCover.png';
     this.update();
   }
 
@@ -111,8 +115,7 @@ class Book {
       }
       books.add(this);
       homeLibraryEditNotifier.value = !homeLibraryEditNotifier.value;
-      await db.insert('books', this.toMap(),
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert('books', this.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 

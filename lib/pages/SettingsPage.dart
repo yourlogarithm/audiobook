@@ -123,12 +123,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     margin: EdgeInsets.only(top: 20),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         button(Icons.highlight_off, 'Force\nstop', ForceStop(),
                             context),
-                        button(Icons.equalizer_rounded, 'Equalizer',
-                            Equalizer(), context),
                         button(Icons.folder_open, 'Default\nfolder',
                             DefaultFolder(), context),
                       ],
@@ -506,79 +504,6 @@ class _ForceStopState extends State<ForceStop> {
               Settings.forceStop = Duration(hours: duration);
               Settings.write();
             }
-            Navigator.pop(context);
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: Text(
-              'Confirm',
-              style: TextStyle(
-                  color: Settings.colors[6],
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-        )
-      ],
-    );
-  }
-}
-
-class Equalizer extends StatefulWidget {
-  // const Equalizer({Key key}) : super(key: key);
-
-  @override
-  _EqualizerState createState() => _EqualizerState();
-}
-
-class _EqualizerState extends State<Equalizer> {
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Settings.colors[0],
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-      actionsPadding: EdgeInsets.fromLTRB(0, 0, 20, 5),
-      contentPadding: EdgeInsets.fromLTRB(24, 20, 24, 12),
-      title: Text(
-        'Equalizer',
-        style: TextStyle(
-            color: Settings.colors[3],
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600),
-      ),
-      content: Container(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.1,
-        decoration: BoxDecoration(
-            color: Settings.theme.value == 'Dark'
-                ? Settings.colors[2]
-                : Settings.colors[1],
-            borderRadius: BorderRadius.circular(25)),
-        child: Center(
-            child: Text('Coming soon',
-                style: TextStyle(
-                    color: Settings.colors[3],
-                    fontFamily: 'Montserrat',
-                    fontWeight: FontWeight.w600))),
-      ),
-      actions: [
-        InkWell(
-          onTap: () => Navigator.pop(context),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: Text(
-              'Cancel',
-              style: TextStyle(
-                  color: Settings.colors[6],
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-        InkWell(
-          onTap: () {
             Navigator.pop(context);
           },
           borderRadius: BorderRadius.circular(20),

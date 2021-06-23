@@ -22,6 +22,7 @@ dependencies:
   numberpicker: ^2.1.1
   audio_service: ^0.17.1
   just_audio: ^0.7.5
+  flutter_ffmpeg: ^0.4.0
 
 dev_dependencies:
   flutter_test:

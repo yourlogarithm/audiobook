@@ -60,7 +60,8 @@ class _AddBookPageState extends State<AddBookPage>
               labelColor: Settings.colors[3],
               labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 20),
               indicator: UnderlineTabIndicator(
-                  borderSide: BorderSide(color: Settings.colors[3], width: 4)),
+                  borderSide: BorderSide(color: Settings.colors[3], width: 4)
+              ),
               tabs: [Text('Default'), Text('File system')],
             ),
           ),
@@ -181,7 +182,9 @@ class FileExplorerAudio extends FileExplorer {
         length: Duration(seconds: audioFile!.length!),
         defaultCover: defaultCover,
         cover: cover!,
-        checkpoint: Duration(seconds: 0));
+        checkpoint: Duration(seconds: 0),
+        status: 'new'
+    );
     bool titleEdited = false;
     bool authorEdited = false;
     if (tag != null) {
