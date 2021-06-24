@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
@@ -11,11 +10,8 @@ import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
-import 'package:flutter_ffmpeg/log.dart';
 
 ValueNotifier<Widget> bookPageContextMenu = ValueNotifier(Container());
-late String? line;
 
 class BookPage extends StatefulWidget {
   final Book book;
@@ -26,13 +22,8 @@ class BookPage extends StatefulWidget {
 }
 
 class _BookPageState extends State<BookPage> {
-
-  final FlutterFFprobe _flutterFFmpeg = FlutterFFprobe();
-
-
   @override
   Widget build(BuildContext context) {
-    _flutterFFmpeg.executeWithArguments(['-i', widget.book.path, '-print_format', 'json', '-show_chapters', '-loglevel', 'error']).whenComplete(() {});
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
@@ -121,6 +112,30 @@ class _BookPageState extends State<BookPage> {
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.bold,
                                           fontSize: 20),
+                                    ),
+                                    ValueListenableBuilder(
+                                      valueListenable: widget.book.checkpointNotifier,
+                                      builder: (context, value, _) {
+                                        print(widget.book.chapters);
+                                        if (widget.book.chapters.isNotEmpty){
+                                          Chapter nowChapter = widget.book.chapters.where((chapter) {
+                                            return chapter.start <= widget.book.checkpoint && widget.book.checkpoint < chapter.end;
+                                          }).toList()[0];
+                                          return Text(
+                                            nowChapter.title,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 4,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                                color: Settings.colors[5],
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.w400,
+                                                fontSize: 18
+                                            ),
+                                          );
+                                        }
+                                        return Container();
+                                      },
                                     )
                                   ],
                                 ),
@@ -588,7 +603,6 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
       builder: (context, child) {
         return GestureDetector(
             onTap: () {
-              print(line);
               bookPageContextMenu.value = Container();
               bookPageIsLocked.value = !bookPageIsLocked.value;
               if (bookPageIsLocked.value) {

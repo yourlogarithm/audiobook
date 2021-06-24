@@ -197,7 +197,7 @@ class _HomePageTimelineState extends State<HomePageTimeline> {
             AudioService.customAction('pposition').then((value) {
               if (value != null) {
                 _position = Duration(seconds: value);
-                widget.book.checkpoint = _position;
+                widget.book.updateCheckpoint(_position);
                 if (_position >= widget.book.length){
                   AudioService.seekTo(widget.book.length);
                   widget.book.status = 'read';
@@ -235,7 +235,7 @@ class _HomePageTimelineState extends State<HomePageTimeline> {
                       child: GestureDetector(
                         onPanUpdate: (details) {
                           setState(() {
-                            widget.book.checkpoint = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
+                            widget.book.updateCheckpoint(Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round()));
                           });
                           if (AudioService.running) {
                             AudioService.seekTo(widget.book.checkpoint).whenComplete(() => setState(() {}));
@@ -326,7 +326,7 @@ class _BookPageTimelineState extends State<BookPageTimeline> {
               AudioService.customAction('pposition').then((value) {
                 if (value != null) {
                   _position = Duration(seconds: value);
-                  widget.book.checkpoint = _position;
+                  widget.book.updateCheckpoint(_position);
                   if (_position >= widget.book.length){
                     AudioService.seekTo(widget.book.length);
                     widget.book.status = 'read';
@@ -382,7 +382,7 @@ class _BookPageTimelineState extends State<BookPageTimeline> {
                         child: GestureDetector(
                           onPanUpdate: (details) {
                             setState(() {
-                              widget.book.checkpoint = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
+                              widget.book.updateCheckpoint(Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round()));
                             });
                             if (AudioService.running) {
                               AudioService.seekTo(widget.book.checkpoint).whenComplete(() => setState(() {}));

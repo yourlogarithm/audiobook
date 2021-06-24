@@ -82,44 +82,48 @@ class _MainPageState extends State<MainPage> {
                 child: ValueListenableBuilder(
                   valueListenable: bottomBarIndex,
                   builder: (context, value, _) {
-                    return Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-                      children: [
-                        AnimatedContainer(
-                          width: bottomBarIndex.value == 0 ? MediaQuery.of(context).size.width * 0.3 : 54,
-                          decoration: bottomBarIndex.value == 0 ? BoxDecoration(
-                              color: Settings.colors[6],
-                              borderRadius:
-                              BorderRadius.circular(25))
-                              : BoxDecoration(),
-                          duration: Duration(milliseconds: 300),
-                          child: _item(0, Icons.menu, 'Library'),
-                        ),
-                        AnimatedContainer(
-                          width: bottomBarIndex.value == 1 ? MediaQuery.of(context).size.width * 0.3 : 54,
-                          decoration: bottomBarIndex.value == 1
-                              ? BoxDecoration(
-                              color: Settings.colors[6],
-                              borderRadius:
-                              BorderRadius.circular(25))
-                              : BoxDecoration(),
-                          duration: Duration(milliseconds: 300),
-                          child: _item(1, Icons.home, 'Home'),
-                        ),
-                        AnimatedContainer(
-                          width: bottomBarIndex.value == 2 ? MediaQuery.of(context).size.width * 0.3 : 54,
-                          decoration: bottomBarIndex.value == 2
-                              ? BoxDecoration(
-                              color: Settings.colors[6],
-                              borderRadius:
-                              BorderRadius.circular(25))
-                              : BoxDecoration(),
-                          duration: Duration(milliseconds: 300),
-                          child: _item(2, Icons.settings, 'Settings'),
-                        ),
-                      ],
-                    );
+                    return ValueListenableBuilder(
+                        valueListenable: Settings.theme,
+                        builder: (context, value, _) {
+                          return Row(
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                            children: [
+                              AnimatedContainer(
+                                width: bottomBarIndex.value == 0 ? MediaQuery.of(context).size.width * 0.3 : 54,
+                                decoration: bottomBarIndex.value == 0 ? BoxDecoration(
+                                    color: Settings.colors[6],
+                                    borderRadius:
+                                    BorderRadius.circular(25))
+                                    : BoxDecoration(),
+                                duration: Duration(milliseconds: 300),
+                                child: _item(0, Icons.menu, 'Library'),
+                              ),
+                              AnimatedContainer(
+                                width: bottomBarIndex.value == 1 ? MediaQuery.of(context).size.width * 0.3 : 54,
+                                decoration: bottomBarIndex.value == 1
+                                    ? BoxDecoration(
+                                    color: Settings.colors[6],
+                                    borderRadius:
+                                    BorderRadius.circular(25))
+                                    : BoxDecoration(),
+                                duration: Duration(milliseconds: 300),
+                                child: _item(1, Icons.home, 'Home'),
+                              ),
+                              AnimatedContainer(
+                                width: bottomBarIndex.value == 2 ? MediaQuery.of(context).size.width * 0.3 : 54,
+                                decoration: bottomBarIndex.value == 2
+                                    ? BoxDecoration(
+                                    color: Settings.colors[6],
+                                    borderRadius:
+                                    BorderRadius.circular(25))
+                                    : BoxDecoration(),
+                                duration: Duration(milliseconds: 300),
+                                child: _item(2, Icons.settings, 'Settings'),
+                              ),
+                            ],
+                          );
+                    });
                   },
                 )
           )

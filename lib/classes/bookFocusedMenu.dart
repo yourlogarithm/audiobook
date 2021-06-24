@@ -1,8 +1,6 @@
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
-import 'package:audiobook/pages/HomePage.dart';
-import 'package:audiobook/pages/LibraryPage.dart';
 import 'package:flutter/material.dart';
 import 'package:focused_menu/focused_menu.dart';
 import 'package:focused_menu/modals.dart';

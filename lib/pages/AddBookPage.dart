@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/explorer.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
@@ -8,6 +7,8 @@ import 'package:audiobook/content.dart';
 import 'package:audiotagger/models/audiofile.dart';
 import 'package:audiotagger/models/tag.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
+import 'package:flutter_ffmpeg/media_information.dart';
 import 'dart:io';
 import 'package:path/path.dart';
 import 'package:audiotagger/audiotagger.dart';
@@ -144,10 +145,37 @@ class FileExplorerAudio extends FileExplorer {
   }
 
   void selectFile(File file) async {
+    print(file.path);
     Audiotagger tagger = Audiotagger();
     Tag? tag = await tagger.readTags(path: file.path);
     AudioFile? audioFile = await tagger.readAudioFile(path: file.path);
     List<FileSystemEntity> parent = await this.listDir(file.parent.path);
+    List<Chapter> chapters = [];
+    List? chaptersData;
+    final FlutterFFprobe _flutterFFprobe = FlutterFFprobe();
+    await _flutterFFprobe.executeWithArguments(['-i', file.path, '-print_format', 'json', '-show_chapters', '-loglevel', 'error']);
+    await _flutterFFprobe.getMediaInformation(file.path).then((value)  {
+      Map data = value.getAllProperties();
+      print('=======================================');
+      chaptersData = data['chapters'];
+      print(chaptersData);
+      print('=======================================');
+      if (chaptersData != null){
+        if (chaptersData!.isNotEmpty) {
+          chaptersData!.asMap().forEach((index, chapter) {
+            String title = index.toString();
+            if (chapter['tags'] != null){
+              if (chapter['tags']['title'] != null){
+                title = chapter['tags']['title'];
+              }
+            }
+            Duration start = Duration(seconds: int.parse(chapter['start_time'].split('.')[0]));
+            Duration end = Duration(seconds: int.parse(chapter['end_time'].split('.')[0]));
+            chapters.add(Chapter(title: title, start: start, end: end));
+          });
+        }
+      }
+    });
     bool defaultCover = true;
     String? cover;
     Uint8List? artwork = await tagger.readArtwork(path: file.path);
@@ -175,15 +203,16 @@ class FileExplorerAudio extends FileExplorer {
       cover = Settings.dir.path + '/' + 'defaultCover.png';
     }
     Book book = Book(
-        id: books.isEmpty ? 1 : books.last.id! + 1,
-        title: 'title',
-        author: 'author',
-        path: file.path,
-        length: Duration(seconds: audioFile!.length!),
-        defaultCover: defaultCover,
-        cover: cover!,
-        checkpoint: Duration(seconds: 0),
-        status: 'new'
+      id: books.isEmpty ? 1 : books.last.id! + 1,
+      title: 'title',
+      author: 'author',
+      path: file.path,
+      length: Duration(seconds: audioFile!.length!),
+      defaultCover: defaultCover,
+      cover: cover!,
+      checkpoint: Duration(seconds: 0),
+      status: 'new',
+      chapters: chapters
     );
     bool titleEdited = false;
     bool authorEdited = false;

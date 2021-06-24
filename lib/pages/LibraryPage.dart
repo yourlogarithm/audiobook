@@ -28,7 +28,13 @@ class _LibraryPageState extends State<LibraryPage> with TickerProviderStateMixin
       brightness: Settings.theme.value == 'Dark' ? Brightness.dark : Brightness.light,
       shadowColor: Settings.theme.value == 'Dark' ? Color.fromRGBO(0, 0, 0, 0.1) : Color.fromRGBO(0, 0, 0, 0.5),
       backgroundColor: Settings.colors[2],
-      title: Text('Library'),
+      title: Text(
+        'Library',
+        style: TextStyle(
+          color: Settings.colors[3],
+          fontFamily: 'Poppins'
+        ),
+      ),
       bottom: TabBar(
         controller: _tabController,
         labelPadding: EdgeInsets.zero,
@@ -61,39 +67,19 @@ class _LibraryPageState extends State<LibraryPage> with TickerProviderStateMixin
       backgroundColor: Settings.colors[1],
       resizeToAvoidBottomInset: false,
       appBar: appBar,
-      body: Column(
-        children: [
-          if (AdWidgets.libraryPag != null && AdState.loaded)
-            AdWidgets.libraryPag!
-          else
-            Container(
-              width: MediaQuery.of(context).size.width,
-              height: adaptiveBannerSize.height.toDouble(),
-              color: Settings.colors[0],
-              child: Center(
-                  child: Text(
-                    'Ad not loaded',
-                    style: TextStyle(
-                        color: Settings.colors[4],
-                        fontFamily: 'Open Sans'),
-                  )),
-            ),
-          ScrollConfiguration(
-            behavior: MyBehavior(),
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height - appBar.preferredSize.height - appBar.bottom!.preferredSize.height - adaptiveBannerSize.height,
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  Category(category: 'reading'),
-                  Category(category: 'new'),
-                  Category(category: 'read')
-                ],
-              ),
-            ),
+      body: ScrollConfiguration(
+        behavior: MyBehavior(),
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width,
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              Category(category: 'reading'),
+              Category(category: 'new'),
+              Category(category: 'read')
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -175,39 +161,33 @@ class _CategoryState extends State<Category> {
     return output;
   }
 
-  late int adIndex;
-  late Widget ad;
-
-  @override
-  void initState() {
-    switch(widget.category){
-      case 'reading':
-        adIndex = 0;
-        break;
-      case 'new':
-        adIndex = 1;
-        break;
-      case 'read':
-        adIndex = 2;
-        break;
-    }
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: MediaQuery.of(context).size.height - Scaffold.of(context).appBarMaxHeight! - adaptiveBannerSize.height,
       child: ValueListenableBuilder(
         valueListenable: booksChanged,
         builder: (context, value, _) {
-          return GridView.count(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.05, left: 10, right: 10, top: 10),
-            physics: BouncingScrollPhysics(),
-            crossAxisCount: 2,
-            childAspectRatio: 0.75,
-            children: getBooks(),
-          );
+          List<Widget> _containers = getBooks();
+          if (_containers.isNotEmpty){
+            return GridView.count(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.05, left: 10, right: 10, top: 10),
+              physics: BouncingScrollPhysics(),
+              crossAxisCount: 2,
+              childAspectRatio: 0.75,
+              children: getBooks(),
+            );
+          } else {
+            return Center(
+              child: Text(
+                'Empty',
+                style: TextStyle(
+                  color: Settings.colors[3],
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500
+                ),
+              ),
+            );
+          }
         },
       )
     );

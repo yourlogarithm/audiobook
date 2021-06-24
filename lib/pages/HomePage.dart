@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:audiobook/classes/ad.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/bookFocusedMenu.dart';
 import 'package:audiobook/classes/player.dart';
@@ -7,8 +6,6 @@ import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
 import 'package:flutter/material.dart';
-import 'package:focused_menu/focused_menu.dart';
-import 'package:focused_menu/modals.dart';
 
 class HomePage extends StatefulWidget {
   // const HomePage({Key key}) : super(key: key);
@@ -50,7 +47,7 @@ class _HomePageState extends State<HomePage> {
                       List<Book> foundLastListenedBook = books.where((book) => book.id == value).toList();
                       Book book;
                       if (foundLastListenedBook.isEmpty){
-                        book = Book(id: -1, title: 'Start listening to an audiobook', author: '', checkpoint: Duration(seconds: 0), defaultCover: true, cover: Settings.dir.path + '/' 'defaultCover.png', length: Duration(seconds: 100), path: 'none', status: 'read');
+                        book = Book(id: -1, title: 'Start listening to an audiobook', author: '', checkpoint: Duration(seconds: 0), defaultCover: true, cover: Settings.dir.path + '/' 'defaultCover.png', length: Duration(seconds: 100), path: 'none', status: 'read', chapters: []);
                       } else {
                         book = foundLastListenedBook[0];
                       }
@@ -235,13 +232,15 @@ class _LibraryState extends State<Library> {
     }
 
     List<Book> nonRead = books.where((element) => element.status != 'read').toList();
-    if (AdWidgets.homePag != null && AdState.loaded) {
-      output.add(AdWidgets.homePag!);
-    }
     for (int i = 0; i < nonRead.length; i++){
       if (i == nonRead.length - 1) {
         output.add(Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.08 - MediaQuery.of(context).size.height * 0.0125),
+          child: _container(nonRead[i], i),
+        ));
+      } else if (i == 0){
+        output.add(Padding(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.0125),
           child: _container(nonRead[i], i),
         ));
       } else {

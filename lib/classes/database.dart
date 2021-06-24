@@ -31,7 +31,8 @@ class DatabaseProvider {
                   'path TEXT, length INTEGER, '
                   'defaultCover INTEGER, cover TEXT, '
                   'checkpoint INTEGER, '
-                  'status STRING'
+                  'status STRING,'
+                  'chapters BLOB'
                   ')'
           );
           await db.execute(
@@ -56,13 +57,6 @@ class DatabaseProvider {
         maps[i].forEach((key, value) {
           newMap[key] = value;
         });
-        // newMap['id'] = maps[i]['id'];
-        // newMap['title'] = maps[i]['title'];
-        // newMap['author'] = maps[i]['author'];
-        // newMap['path'] = maps[i]['path'];
-        // newMap['length'] = maps[i]['length'];
-        // newMap['checkpoint'] = maps[i]['checkpoint'];
-        // newMap['status'] = maps[i]['status'];
         if (await File(newMap['path']).exists()){
           bool edited = false;
           if (maps[i]['defaultCover'] == 0){

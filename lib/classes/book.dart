@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/settings.dart';
@@ -19,6 +20,8 @@ class Book {
   late bool defaultCover;
   late String cover;
   late String status;
+  List<Chapter> chapters = [];
+  late ValueNotifier<Duration> checkpointNotifier;
 
   Book({
     required this.id,
@@ -29,8 +32,16 @@ class Book {
     required this.checkpoint,
     required this.defaultCover,
     required this.cover,
-    required this.status
-  });
+    required this.status,
+    required this.chapters
+  }) {
+    checkpointNotifier = ValueNotifier(checkpoint);
+  }
+
+  void updateCheckpoint(Duration duration) {
+    checkpoint = duration;
+    checkpointNotifier.value = duration;
+  }
 
   Book.fromMap(Map<String, dynamic> map) {
     id = map['id'];
@@ -39,12 +50,23 @@ class Book {
     path = map['path'];
     length = Duration(seconds: map['length']);
     checkpoint = Duration(seconds: map['checkpoint']);
+    checkpointNotifier = ValueNotifier(checkpoint);
     defaultCover = map['defaultCover'] == 1 ? true : false;
     cover = map['cover'];
     status = map['status'];
+    String chaptersEncoded = map['chapters'];
+    Map<String, dynamic> chaptersMap = jsonDecode(chaptersEncoded);
+    print(chaptersMap);
+    chaptersMap.forEach((index, chapter) {
+      chapters.add(Chapter.fromMap(chapter));
+    });
   }
 
   Map<String, dynamic> toMap() {
+    Map<String, Map<String, dynamic>> chaptersMap = {};
+    for (int i = 0; i < chapters.length; i ++) {
+      chaptersMap[i.toString()] = chapters[i].toMap();
+    }
     return {
       'id': id,
       'title': title,
@@ -54,7 +76,8 @@ class Book {
       'checkpoint': checkpoint.inSeconds,
       'defaultCover': defaultCover ? 1 : 0,
       'cover': cover,
-      'status': status
+      'status': status,
+      'chapters': jsonEncode(chaptersMap)
     };
   }
 
@@ -127,5 +150,24 @@ class Book {
     Database db = await DatabaseProvider.getDatabase;
     booksChanged.value = !booksChanged.value;
     await db.update('books', this.toMap(), where: 'id = ?', whereArgs: [this.id]);
+  }
+}
+
+class Chapter {
+  late String title;
+  late Duration start;
+  late Duration end;
+  Chapter({required this.title, required this.start, required this.end});
+  Chapter.fromMap(Map<String, dynamic> map) {
+    title = map['title'];
+    start = Duration(seconds: map['start']);
+    end = Duration(seconds: map['end']);
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'start': start.inSeconds,
+      'end': end.inSeconds
+    };
   }
 }
