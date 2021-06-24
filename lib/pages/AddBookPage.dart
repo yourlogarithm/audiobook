@@ -153,7 +153,6 @@ class FileExplorerAudio extends FileExplorer {
     List<Chapter> chapters = [];
     List? chaptersData;
     final FlutterFFprobe _flutterFFprobe = FlutterFFprobe();
-    await _flutterFFprobe.executeWithArguments(['-i', file.path, '-print_format', 'json', '-show_chapters', '-loglevel', 'error']);
     await _flutterFFprobe.getMediaInformation(file.path).then((value)  {
       Map data = value.getAllProperties();
       print('=======================================');
