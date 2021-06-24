@@ -1,9 +1,12 @@
+import 'package:audiobook/classes/ad.dart';
 import 'package:audiobook/classes/explorer.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:io';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as dpath;
 import 'package:numberpicker/numberpicker.dart';
+import 'package:provider/provider.dart';
 
 class SettingsPage extends StatefulWidget {
   // const SettingsPage({Key key}) : super(key: key);
@@ -87,6 +90,8 @@ class _SettingsPageState extends State<SettingsPage> {
               ? Settings.colors[2]
               : Settings.colors[1],
           child: Container(
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).size.height * 0.06),
             decoration: BoxDecoration(
                 color: Settings.colors[0],
                 borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
@@ -107,31 +112,51 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Container(
               margin: EdgeInsets.all(20),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
                     children: [
-                      button(
-                          Icons.timer, 'Sleep\ntimer', SleepTimer(), context),
-                      button(Icons.brush_outlined, 'Theme', Theme(), context),
-                      button(Icons.fast_rewind_outlined, 'Rewind', Rewind(),
-                          context),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          button(Icons.timer, 'Sleep\ntimer', SleepTimer(),
+                              context),
+                          button(
+                              Icons.brush_outlined, 'Theme', Theme(), context),
+                          button(Icons.fast_rewind_outlined, 'Rewind', Rewind(),
+                              context),
+                        ],
+                      ),
+                      Container(
+                        margin: EdgeInsets.only(top: 20),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            button(Icons.highlight_off, 'Force\nstop',
+                                ForceStop(), context),
+                            button(Icons.folder_open, 'Default\nfolder',
+                                DefaultFolder(), context),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                  Container(
-                    margin: EdgeInsets.only(top: 20),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        button(Icons.highlight_off, 'Force\nstop', ForceStop(),
-                            context),
-                        button(Icons.folder_open, 'Default\nfolder',
-                            DefaultFolder(), context),
-                      ],
-                    ),
-                  )
+                  AdWidgets.settingsPag != null && AdState.loaded
+                      ? AdWidgets.settingsPag!
+                      : Container(
+                          width: 320,
+                          height: 250,
+                          color: Settings.colors[1],
+                          child: Center(
+                              child: Text(
+                            'Ad not loaded',
+                            style: TextStyle(
+                                color: Settings.colors[4],
+                                fontFamily: 'Open Sans'),
+                          )),
+                        )
                 ],
               ),
             ),
@@ -621,7 +646,7 @@ class FileExplorerChooseDefault extends FileExplorer {
     List<Widget> folders = [];
     dirs.forEach((directory) {
       String _path = directory.path;
-      String _extension = extension(_path);
+      String _extension = dpath.extension(_path);
       if (FileExplorer.audioFormats.contains(_extension) ||
           (_extension == '' && Directory(_path).existsSync())) {
         folders.add(Column(
@@ -686,7 +711,9 @@ class FileExplorerChooseDefault extends FileExplorer {
               flex: 1,
               child: Center(
                   child: Text(
-                basename(_path) == '0' ? 'Internal Storage' : basename(_path),
+                dpath.basename(_path) == '0'
+                    ? 'Internal Storage'
+                    : dpath.basename(_path),
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(

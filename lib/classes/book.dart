@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/settings.dart';
-import 'package:audiobook/pages/HomePage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
+ValueNotifier<bool> booksChanged = ValueNotifier(false);
 List<Book> books = [];
 
 class Book {
@@ -95,7 +96,6 @@ class Book {
       file.copy(extStorage.path + '/' + basename(file.path));
       defaultCover = false;
       cover = file.path;
-      homeLibraryEditNotifier.value = !homeLibraryEditNotifier.value;
       this.update();
     }
   }
@@ -110,11 +110,8 @@ class Book {
       }
     });
     if (!same) {
-      if (animatedLibraryList.currentState != null){
-        animatedLibraryList.currentState!.insertItem(books.length);
-      }
       books.add(this);
-      homeLibraryEditNotifier.value = !homeLibraryEditNotifier.value;
+      booksChanged.value = !booksChanged.value;
       await db.insert('books', this.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
@@ -122,11 +119,13 @@ class Book {
   Future<void> remove() async {
     Database db = await DatabaseProvider.getDatabase;
     books.remove(this);
+    booksChanged.value = !booksChanged.value;
     await db.delete('books', where: 'id = ?', whereArgs: [this.id]);
   }
 
   Future<void> update() async {
     Database db = await DatabaseProvider.getDatabase;
+    booksChanged.value = !booksChanged.value;
     await db.update('books', this.toMap(), where: 'id = ?', whereArgs: [this.id]);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/pages/HomePage.dart';
 import 'package:audiobook/pages/LibraryPage.dart';
@@ -56,17 +57,20 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        PageView(
-          scrollDirection: Axis.horizontal,
-          controller: mainPageController,
-          onPageChanged: (index) {
-            bottomBarIndex.value = index;
-          },
-          children: [
-            LibraryPage(),
-            HomePage(),
-            SettingsPage()
-          ],
+        ScrollConfiguration(
+          behavior: MyBehavior(),
+          child: PageView(
+            scrollDirection: Axis.horizontal,
+            controller: mainPageController,
+            onPageChanged: (index) {
+              bottomBarIndex.value = index;
+            },
+            children: [
+              LibraryPage(),
+              HomePage(),
+              SettingsPage()
+            ],
+          ),
         ),
         Positioned(
             bottom: 0,

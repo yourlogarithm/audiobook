@@ -2,10 +2,14 @@ import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/pages/AddBookPage.dart';
 import 'package:audiobook/pages/BookPage.dart';
 import 'package:audiobook/pages/ChangeCoverPage.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:provider/provider.dart';
 import 'classes/settings.dart';
 import 'pages/MainPage.dart';
+import 'classes/ad.dart';
 
 void moveHome() {
   if (bottomBarIndex.value == -1) {
@@ -27,6 +31,51 @@ class Content extends StatefulWidget {
 }
 
 class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final adState = Provider.of<AdState>(context);
+    adState.initialization.then((status) {
+          AdWidgets.libraryPag = Container(
+              width: MediaQuery.of(context).size.width,
+              height: adaptiveBannerSize.height.toDouble(),
+              child: AdWidget(
+                ad: BannerAd(
+                    adUnitId: adState.bannerAdUnitId,
+                    size: adaptiveBannerSize,
+                    request: AdRequest(),
+                    listener: adState.adListener
+                )..load(),
+              )
+          );
+          AdWidgets.homePag = Container(
+            width: 320,
+            height: 100,
+            child: AdWidget(ad: BannerAd(
+                adUnitId: adState.bannerAdUnitId,
+                size: AdSize.largeBanner,
+                request: AdRequest(),
+                listener: adState.adListener
+            )..load()),
+          );
+          AdWidgets.settingsPag = Container(
+            width: 320,
+            height: 250,
+            child: AdWidget(ad: BannerAd(
+                adUnitId: adState.bannerAdUnitId,
+                size: AdSize.mediumRectangle,
+                request: AdRequest(),
+                listener: adState.adListener
+            )..load()
+            )
+          );
+        setState(() {
+          AdState.loaded = true;
+        });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(

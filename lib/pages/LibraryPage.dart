@@ -1,14 +1,12 @@
 import 'dart:io';
-
+import 'package:audiobook/classes/ad.dart';
 import 'package:audiobook/classes/book.dart';
+import 'package:audiobook/classes/bookFocusedMenu.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
-import 'package:audiobook/pages/HomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:focused_menu/focused_menu.dart';
-import 'package:focused_menu/modals.dart';
 
 class LibraryPage extends StatefulWidget{
   const LibraryPage({Key? key}) : super(key: key);
@@ -20,57 +18,82 @@ class LibraryPage extends StatefulWidget{
 class _LibraryPageState extends State<LibraryPage> with TickerProviderStateMixin  {
 
   late TabController _tabController;
+  late AppBar appBar;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    appBar = AppBar(
+      brightness: Settings.theme.value == 'Dark' ? Brightness.dark : Brightness.light,
+      shadowColor: Settings.theme.value == 'Dark' ? Color.fromRGBO(0, 0, 0, 0.1) : Color.fromRGBO(0, 0, 0, 0.5),
+      backgroundColor: Settings.colors[2],
+      title: Text('Library'),
+      bottom: TabBar(
+        controller: _tabController,
+        labelPadding: EdgeInsets.zero,
+        labelStyle: TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w500
+        ),
+        labelColor: Settings.colors[3],
+        indicator: UnderlineTabIndicator(
+            borderSide: BorderSide(color: Settings.colors[3], width: 2)
+        ),
+        tabs: [
+          Tab(
+            text: 'Reading',
+          ),
+          Tab(
+            text: 'New',
+          ),
+          Tab(
+            text: 'Read',
+          )
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Settings.colors[1],
-      appBar: AppBar(
-        brightness: Settings.theme.value == 'Dark' ? Brightness.dark : Brightness.light,
-        shadowColor: Settings.theme.value == 'Dark' ? Color.fromRGBO(0, 0, 0, 0.1) : Color.fromRGBO(0, 0, 0, 0.5),
-        backgroundColor: Settings.colors[2],
-        title: Text('Library'),
-        bottom: TabBar(
-          controller: _tabController,
-          // isScrollable: true,
-          labelPadding: EdgeInsets.zero,
-          labelStyle: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w500
-          ),
-          labelColor: Settings.colors[3],
-          indicator: UnderlineTabIndicator(
-              borderSide: BorderSide(color: Settings.colors[3], width: 2)
-          ),
-          tabs: [
-            Tab(
-              text: 'Reading',
+      resizeToAvoidBottomInset: false,
+      appBar: appBar,
+      body: Column(
+        children: [
+          if (AdWidgets.libraryPag != null && AdState.loaded)
+            AdWidgets.libraryPag!
+          else
+            Container(
+              width: MediaQuery.of(context).size.width,
+              height: adaptiveBannerSize.height.toDouble(),
+              color: Settings.colors[0],
+              child: Center(
+                  child: Text(
+                    'Ad not loaded',
+                    style: TextStyle(
+                        color: Settings.colors[4],
+                        fontFamily: 'Open Sans'),
+                  )),
             ),
-            Tab(
-              text: 'New',
+          ScrollConfiguration(
+            behavior: MyBehavior(),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height - appBar.preferredSize.height - appBar.bottom!.preferredSize.height - adaptiveBannerSize.height,
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  Category(category: 'reading'),
+                  Category(category: 'new'),
+                  Category(category: 'read')
+                ],
+              ),
             ),
-            Tab(
-              text: 'Read',
-            )
-          ],
-        ),
-      ),
-      body: ScrollConfiguration(
-        behavior: MyBehavior(),
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            Category(category: 'reading'),
-            Category(category: 'new'),
-            Category(category: 'read')
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -85,7 +108,6 @@ class Category extends StatefulWidget {
 }
 
 class _CategoryState extends State<Category> {
-
   List<Widget> getBooks() {
     List<Widget> output = [];
     books.forEach((book) {
@@ -95,255 +117,8 @@ class _CategoryState extends State<Category> {
             children: [
               Expanded(
                 flex: 3,
-                child: FocusedMenuHolder(
-                  onPressed: () {},
-                  duration: Duration(milliseconds: 300),
-                  menuBoxDecoration: BoxDecoration(color: Settings.colors[2], borderRadius: BorderRadius.circular(5)),
-                  menuItems: [
-                    FocusedMenuItem(
-                        onPressed: () {
-                          showDialog(context: context, builder: (context) {
-                            TextEditingController _textController = TextEditingController(text: book.title);
-                            return AlertDialog(
-                              backgroundColor: Settings.colors[0],
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                              actionsPadding: EdgeInsets.fromLTRB(0, 0, 20, 5),
-                              contentPadding: EdgeInsets.fromLTRB(24, 20, 24, 12),
-                              title: Text(
-                                'Edit title',
-                                style: TextStyle(
-                                    color: Settings.colors[3],
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.w600
-                                ),
-                              ),
-                              content: TextField(
-                                controller: _textController,
-                                maxLength: 70,
-                                style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    color: Settings.colors[3]
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Edit the title...',
-                                  hintStyle: TextStyle(
-                                      fontFamily: 'Montserrat',
-                                      color: Settings.colors[4]
-                                  ),
-                                  counterStyle: TextStyle(
-                                      fontFamily: 'Montserrat',
-                                      color: Settings.colors[4]
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(width: 2, color: Settings.colors[6])),
-                                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(width: 3, color: Settings.colors[6])),
-                                ),
-                              ),
-                              actions: [
-                                InkWell(
-                                  onTap: () => Navigator.pop(context),
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4),
-                                    child: Text(
-                                      'Cancel',
-                                      style: TextStyle(
-                                          color: Settings.colors[6],
-                                          fontFamily: 'Poppins',
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                ),
-                                InkWell(
-                                  onTap: () {
-                                    if (_textController.text.length >= 1 && _textController.text[0] != ' '){
-                                      setState(() {
-                                        book.title = _textController.text;
-                                      });
-                                      book.update();
-                                    }
-                                    Navigator.pop(context);
-                                  },
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4),
-                                    child: Text(
-                                      'Confirm',
-                                      style: TextStyle(
-                                          color: Settings.colors[6],
-                                          fontFamily: 'Poppins',
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
-                                )
-                              ]
-                            );
-                          });
-                        },
-                        trailingIcon: Icon(Icons.title, color: Settings.colors[3]),
-                        title: Text(
-                          'Edit title',
-                          style: TextStyle(
-                              color: Settings.colors[3],
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w600),
-                        ),
-                        backgroundColor: Settings.colors[1]
-                    ),
-                    FocusedMenuItem(
-                        onPressed: () {
-                          showDialog(context: context, builder: (context) {
-                            TextEditingController _textController = TextEditingController(text: book.author);
-                            return AlertDialog(
-                                backgroundColor: Settings.colors[0],
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-                                actionsPadding: EdgeInsets.fromLTRB(0, 0, 20, 5),
-                                contentPadding: EdgeInsets.fromLTRB(24, 20, 24, 12),
-                                title: Text(
-                                  'Edit author',
-                                  style: TextStyle(
-                                      color: Settings.colors[3],
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w600
-                                  ),
-                                ),
-                                content: TextField(
-                                  controller: _textController,
-                                  maxLength: 30,
-                                  style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      color: Settings.colors[3]
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Edit the author...',
-                                    hintStyle: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        color: Settings.colors[4]
-                                    ),
-                                    counterStyle: TextStyle(
-                                        fontFamily: 'Montserrat',
-                                        color: Settings.colors[4]
-                                    ),
-                                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(width: 2, color: Settings.colors[6])),
-                                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(width: 3, color: Settings.colors[6])),
-                                  ),
-                                ),
-                                actions: [
-                                  InkWell(
-                                    onTap: () => Navigator.pop(context),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Text(
-                                        'Cancel',
-                                        style: TextStyle(
-                                            color: Settings.colors[6],
-                                            fontFamily: 'Poppins',
-                                            fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                  ),
-                                  InkWell(
-                                    onTap: () {
-                                      if (_textController.text.length >= 1 && _textController.text[0] != ' '){
-                                        setState(() {
-                                          book.author = _textController.text;
-                                        });
-                                        book.update();
-                                      }
-                                      Navigator.pop(context);
-                                    },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(4),
-                                      child: Text(
-                                        'Confirm',
-                                        style: TextStyle(
-                                            color: Settings.colors[6],
-                                            fontFamily: 'Poppins',
-                                            fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                  )
-                                ]
-                            );
-                          });
-                        },
-                        trailingIcon: Icon(Icons.edit_outlined, color: Settings.colors[3]),
-                        title: Text(
-                          'Edit author',
-                          style: TextStyle(
-                              color: Settings.colors[3],
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w600),
-                        ),
-                        backgroundColor: Settings.colors[1]
-                    ),
-                    FocusedMenuItem(
-                        onPressed: () {
-                          Content.contentNavigatorKey.currentState!.pushReplacementNamed('/changeCover', arguments: book);
-                        },
-                        trailingIcon:
-                        Icon(Icons.image_outlined, color: Settings.colors[3]),
-                        title: Text(
-                          'Change cover',
-                          style: TextStyle(
-                              color: Settings.colors[3],
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w600),
-                        ),
-                        backgroundColor: Settings.colors[1]
-                    ),
-                    FocusedMenuItem(
-                        onPressed: () {
-                          setState(() {
-                            book.setDefaultCover();
-                          });
-                        },
-                        trailingIcon:
-                        Icon(Icons.hide_image_outlined, color: Settings.colors[3]),
-                        title: Text(
-                          'Remove cover',
-                          style: TextStyle(
-                              color: Settings.colors[3],
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w600),
-                        ),
-                        backgroundColor: Settings.colors[1]
-                    ),
-                    FocusedMenuItem(
-                        onPressed: () {
-                          setState(() {
-                            book.status = book.status == 'read' ? 'new' : 'read';
-                          });
-                          book.update();
-                        },
-                        trailingIcon: Icon(Icons.done, color: Settings.colors[3]),
-                        title: Text(
-                          book.status == 'read' ? 'Mark as unread' : 'Mark as read',
-                          style: TextStyle(
-                              color: Settings.colors[3],
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w600),
-                        ),
-                        backgroundColor: Settings.colors[1]
-                    ),
-                    FocusedMenuItem(
-                        onPressed: (){
-                          setState(() {
-                            book.remove();
-                          });
-                        },
-                        trailingIcon: Icon(Icons.delete_outlined, color: Color(0xffde4949)),
-                        title: Text(
-                          'Delete book',
-                          style: TextStyle(
-                              color: Color(0xffde4949),
-                              fontFamily: 'Montserrat',
-                              fontWeight: FontWeight.w600),
-                        ),
-                        backgroundColor: Settings.colors[1]
-                    )
-                  ],
+                child: FocusedMenuBook(
+                  book: book,
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       return Container(
@@ -375,7 +150,7 @@ class _CategoryState extends State<Category> {
                       );
                     },
                   )
-                ),
+                )
               ),
               Expanded(
                   flex: 1,
@@ -400,14 +175,41 @@ class _CategoryState extends State<Category> {
     return output;
   }
 
+  late int adIndex;
+  late Widget ad;
+
+  @override
+  void initState() {
+    switch(widget.category){
+      case 'reading':
+        adIndex = 0;
+        break;
+      case 'new':
+        adIndex = 1;
+        break;
+      case 'read':
+        adIndex = 2;
+        break;
+    }
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.05, left: 10, right: 10, top: 10),
-      physics: BouncingScrollPhysics(),
-      crossAxisCount: 2,
-      childAspectRatio: 0.75,
-      children: getBooks(),
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - Scaffold.of(context).appBarMaxHeight! - adaptiveBannerSize.height,
+      child: ValueListenableBuilder(
+        valueListenable: booksChanged,
+        builder: (context, value, _) {
+          return GridView.count(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.05, left: 10, right: 10, top: 10),
+            physics: BouncingScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 0.75,
+            children: getBooks(),
+          );
+        },
+      )
     );
   }
 }

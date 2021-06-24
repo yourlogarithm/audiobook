@@ -1,7 +1,9 @@
+import 'package:audiobook/classes/ad.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'classes/settings.dart';
 
 class Loading extends StatelessWidget {
@@ -9,6 +11,7 @@ class Loading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AdSize.getAnchoredAdaptiveBannerAdSize(Orientation.portrait, MediaQuery.of(context).size.width.toInt()).then((value) => adaptiveBannerSize = value!);
     DatabaseProvider.getBooks().then((value) {
       books = value;
       Settings.init().whenComplete(() {

@@ -24,6 +24,7 @@ dependencies:
   just_audio: ^0.7.5
   flutter_ffmpeg: ^0.4.0
   google_mobile_ads: ^0.13.1
+  provider: ^5.0.0
 
 dev_dependencies:
   flutter_test:
