@@ -101,7 +101,9 @@ class _BookPageState extends State<BookPage> {
                                         style: TextStyle(
                                             fontFamily: 'Poppins',
                                             fontSize: 16,
-                                            color: Settings.colors[4])),
+                                            color: Settings.colors[4]
+                                        )
+                                    ),
                                     Text(
                                       widget.book.title,
                                       textAlign: TextAlign.center,
@@ -111,7 +113,8 @@ class _BookPageState extends State<BookPage> {
                                           color: Settings.colors[3],
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 20),
+                                          fontSize: 20
+                                      ),
                                     ),
                                     ValueListenableBuilder(
                                       valueListenable: widget.book.checkpoint,

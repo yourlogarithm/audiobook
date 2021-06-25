@@ -250,24 +250,11 @@ class _HomePageTimelineState extends State<HomePageTimeline> {
                       left: (_position.inSeconds * _width) / widget.book.length.inSeconds - 25,
                       width: 50,
                       height: 50,
-                      child: GestureDetector(
-                        onPanUpdate: (details) {
-                          setState(() {
-                            widget.book.checkpoint.value = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
-                          });
-                          if (AudioService.running) {
-                            AudioService.seekTo(widget.book.checkpoint.value).whenComplete(() => setState(() {}));
-                          }
-                        },
-                        onPanEnd: (details) {
-                          widget.book.update();
-                        },
-                        child: Container(
-                          color: Colors.transparent,
-                          child: CustomPaint(
-                            size: Size(50, 20),
-                            foregroundPainter: TimelinePositionCirclePainter(25),
-                          ),
+                      child: Container(
+                        color: Colors.transparent,
+                        child: CustomPaint(
+                          size: Size(50, 20),
+                          foregroundPainter: TimelinePositionCirclePainter(25),
                         ),
                       ),
                     )
@@ -407,11 +394,13 @@ class _BookPageTimelineState extends State<BookPageTimeline> {
                         height: 50,
                         child: GestureDetector(
                           onPanUpdate: (details) {
-                            setState(() {
-                              widget.book.checkpoint.value = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
-                            });
-                            if (AudioService.running) {
-                              AudioService.seekTo(widget.book.checkpoint.value).whenComplete(() => setState(() {}));
+                            if (!bookPageIsLocked.value){
+                              setState(() {
+                                widget.book.checkpoint.value = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
+                              });
+                              if (AudioService.running) {
+                                AudioService.seekTo(widget.book.checkpoint.value).whenComplete(() => setState(() {}));
+                              }
                             }
                           },
                           onPanEnd: (details) {
