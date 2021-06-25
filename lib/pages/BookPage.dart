@@ -114,15 +114,11 @@ class _BookPageState extends State<BookPage> {
                                           fontSize: 20),
                                     ),
                                     ValueListenableBuilder(
-                                      valueListenable: widget.book.checkpointNotifier,
+                                      valueListenable: widget.book.checkpoint,
                                       builder: (context, value, _) {
-                                        print(widget.book.chapters);
                                         if (widget.book.chapters.isNotEmpty){
-                                          Chapter nowChapter = widget.book.chapters.where((chapter) {
-                                            return chapter.start <= widget.book.checkpoint && widget.book.checkpoint < chapter.end;
-                                          }).toList()[0];
                                           return Text(
-                                            nowChapter.title,
+                                            widget.book.nowChapter.title,
                                             textAlign: TextAlign.center,
                                             maxLines: 4,
                                             overflow: TextOverflow.ellipsis,
@@ -216,8 +212,8 @@ class _BookmarkIconState extends State<BookmarkIcon>
     if (!active) {
       Bookmark bookmark = Bookmark(
           bookTitle: widget.book.title,
-          title: convertDuration(widget.book.checkpoint),
-          time: widget.book.checkpoint
+          title: convertDuration(widget.book.checkpoint.value),
+          time: widget.book.checkpoint.value
       );
       bookmark.insert();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -322,7 +318,7 @@ class _ContextMenuState extends State<ContextMenu> {
               child: InkWell(
                 borderRadius: radius,
                 onTap: () {
-                  widget.book.checkpoint = bookmarks[i].time;
+                  widget.book.checkpoint.value = bookmarks[i].time;
                   if (AudioService.running){
                     AudioService.seekTo(bookmarks[i].time);
                   }

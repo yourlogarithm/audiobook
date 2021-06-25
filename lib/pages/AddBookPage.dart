@@ -145,7 +145,6 @@ class FileExplorerAudio extends FileExplorer {
   }
 
   void selectFile(File file) async {
-    print(file.path);
     Audiotagger tagger = Audiotagger();
     Tag? tag = await tagger.readTags(path: file.path);
     AudioFile? audioFile = await tagger.readAudioFile(path: file.path);
@@ -153,12 +152,10 @@ class FileExplorerAudio extends FileExplorer {
     List<Chapter> chapters = [];
     List? chaptersData;
     final FlutterFFprobe _flutterFFprobe = FlutterFFprobe();
+    await _flutterFFprobe.executeWithArguments(['-i', file.path, '-print_format', 'json', '-show_chapters']);
     await _flutterFFprobe.getMediaInformation(file.path).then((value)  {
       Map data = value.getAllProperties();
-      print('=======================================');
       chaptersData = data['chapters'];
-      print(chaptersData);
-      print('=======================================');
       if (chaptersData != null){
         if (chaptersData!.isNotEmpty) {
           chaptersData!.asMap().forEach((index, chapter) {
@@ -209,7 +206,7 @@ class FileExplorerAudio extends FileExplorer {
       length: Duration(seconds: audioFile!.length!),
       defaultCover: defaultCover,
       cover: cover!,
-      checkpoint: Duration(seconds: 0),
+      checkpoint: ValueNotifier(Duration(seconds: 0)),
       status: 'new',
       chapters: chapters
     );

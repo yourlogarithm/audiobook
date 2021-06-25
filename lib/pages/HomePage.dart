@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
                       List<Book> foundLastListenedBook = books.where((book) => book.id == value).toList();
                       Book book;
                       if (foundLastListenedBook.isEmpty){
-                        book = Book(id: -1, title: 'Start listening to an audiobook', author: '', checkpoint: Duration(seconds: 0), defaultCover: true, cover: Settings.dir.path + '/' 'defaultCover.png', length: Duration(seconds: 100), path: 'none', status: 'read', chapters: []);
+                        book = Book(id: -1, title: 'Start listening to an audiobook', author: '', checkpoint: ValueNotifier(Duration(seconds: 0)), defaultCover: true, cover: Settings.dir.path + '/' 'defaultCover.png', length: Duration(seconds: 100), path: 'none', status: 'read', chapters: []);
                       } else {
                         book = foundLastListenedBook[0];
                       }

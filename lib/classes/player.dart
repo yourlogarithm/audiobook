@@ -27,8 +27,8 @@ void playBook(Book book) async {
       book.status = 'reading';
       book.update();
     }
-    if (book.checkpoint != book.length) {
-      await AudioService.seekTo(book.checkpoint);
+    if (book.checkpoint.value != book.length) {
+      await AudioService.seekTo(book.checkpoint.value);
     } else {
       await AudioService.seekTo(Duration(seconds: 0));
     }
@@ -50,17 +50,32 @@ void playBook(Book book) async {
 }
 
 void forwardRewind(Book book, {bool forward = false}){
-  Duration edited = forward ? book.checkpoint+Settings.rewind : book.checkpoint-Settings.rewind;
+  Duration edited = forward ? book.checkpoint.value+Settings.rewind : book.checkpoint.value-Settings.rewind;
   if (edited < Duration(seconds: 0)) {
     edited = Duration(seconds: 0);
   } else if (edited > book.length){
     edited = book.length;
   }
-  book.checkpoint = edited;
+  book.checkpoint.value = edited;
   if (AudioService.running){
     forward ? AudioService.fastForward(): AudioService.rewind();
   }
   book.update();
+}
+void nextPreviousChapter(Book book, {bool next = false}) {
+  if (next){
+    if (book.nowChapter != book.chapters.last){
+      Duration _position = book.chapters[book.chapters.indexOf(book.nowChapter)+1].start;
+      AudioService.seekTo(_position);
+      book.checkpoint.value = _position;
+    }
+  } else {
+    if (book.nowChapter != book.chapters.first){
+      Duration _position = book.chapters[book.chapters.indexOf(book.nowChapter)-1].start;
+      AudioService.seekTo(_position);
+      book.checkpoint.value = _position;
+    }
+  }
 }
 void setSleep() {
   if (!sleep.value) {
@@ -167,13 +182,16 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
 }
 
 Widget _timelineControlButton(IconData icon, Function function) {
-  return InkWell(
-    customBorder: CircleBorder(),
-    onTap: () {
-      bookPageContextMenu.value = Container();
-      function();
-    },
-    child: Icon(icon, color: Settings.colors[3], size: 42),
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      customBorder: CircleBorder(),
+      onTap: () {
+        bookPageContextMenu.value = Container();
+        function();
+      },
+      child: Icon(icon, color: Settings.colors[3], size: 42),
+    ),
   );
 }
 
@@ -192,12 +210,12 @@ class _HomePageTimelineState extends State<HomePageTimeline> {
     return StreamBuilder<Duration>(
         stream: AudioService.positionStream,
         builder: (context, snapshot) {
-          Duration _position = widget.book.checkpoint;
+          Duration _position = widget.book.checkpoint.value;
           if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path && AudioService.running){
             AudioService.customAction('pposition').then((value) {
               if (value != null) {
                 _position = Duration(seconds: value);
-                widget.book.updateCheckpoint(_position);
+                widget.book.checkpoint.value = _position;
                 if (_position >= widget.book.length){
                   AudioService.seekTo(widget.book.length);
                   widget.book.status = 'read';
@@ -235,10 +253,10 @@ class _HomePageTimelineState extends State<HomePageTimeline> {
                       child: GestureDetector(
                         onPanUpdate: (details) {
                           setState(() {
-                            widget.book.updateCheckpoint(Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round()));
+                            widget.book.checkpoint.value = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
                           });
                           if (AudioService.running) {
-                            AudioService.seekTo(widget.book.checkpoint).whenComplete(() => setState(() {}));
+                            AudioService.seekTo(widget.book.checkpoint.value).whenComplete(() => setState(() {}));
                           }
                         },
                         onPanEnd: (details) {
@@ -261,7 +279,11 @@ class _HomePageTimelineState extends State<HomePageTimeline> {
                 child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _timelineControlButton(Icons.skip_previous_outlined, () {}),
+                      _timelineControlButton(Icons.skip_previous_outlined, () {
+                        setState(() {
+                          nextPreviousChapter(widget.book);
+                        });
+                      }),
                       _timelineControlButton(Icons.fast_rewind_outlined, () {
                         if (widget.book.id != -1) {
                           setState(() {
@@ -290,7 +312,11 @@ class _HomePageTimelineState extends State<HomePageTimeline> {
                           });
                         }
                       }),
-                      _timelineControlButton(Icons.skip_next_outlined, () {})
+                      _timelineControlButton(Icons.skip_next_outlined, () {
+                        setState(() {
+                          nextPreviousChapter(widget.book, next: true);
+                        });
+                      })
                     ]
                 ),
               ),
@@ -321,12 +347,12 @@ class _BookPageTimelineState extends State<BookPageTimeline> {
       child: StreamBuilder<Duration>(
           stream: AudioService.positionStream,
           builder: (context, snapshot) {
-            Duration _position = widget.book.checkpoint;
+            Duration _position = widget.book.checkpoint.value;
             if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path && AudioService.running){
               AudioService.customAction('pposition').then((value) {
                 if (value != null) {
                   _position = Duration(seconds: value);
-                  widget.book.updateCheckpoint(_position);
+                  widget.book.checkpoint.value = _position;
                   if (_position >= widget.book.length){
                     AudioService.seekTo(widget.book.length);
                     widget.book.status = 'read';
@@ -382,10 +408,10 @@ class _BookPageTimelineState extends State<BookPageTimeline> {
                         child: GestureDetector(
                           onPanUpdate: (details) {
                             setState(() {
-                              widget.book.updateCheckpoint(Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round()));
+                              widget.book.checkpoint.value = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
                             });
                             if (AudioService.running) {
-                              AudioService.seekTo(widget.book.checkpoint).whenComplete(() => setState(() {}));
+                              AudioService.seekTo(widget.book.checkpoint.value).whenComplete(() => setState(() {}));
                             }
                           },
                           onPanEnd: (details) {
@@ -428,7 +454,11 @@ class _BookPageTimelineState extends State<BookPageTimeline> {
                               children: [
                                 !value
                                     ? _timelineControlButton(
-                                    Icons.skip_previous_outlined, () {})
+                                    Icons.skip_previous_outlined, () {
+                                  setState(() {
+                                    nextPreviousChapter(widget.book);
+                                  });
+                                })
                                     : Container(),
                                 !value
                                     ? _timelineControlButton(
@@ -463,7 +493,11 @@ class _BookPageTimelineState extends State<BookPageTimeline> {
                                     : Container(),
                                 !value
                                     ? _timelineControlButton(
-                                    Icons.skip_next_outlined, () {})
+                                    Icons.skip_next_outlined, () {
+                                  setState(() {
+                                    nextPreviousChapter(widget.book, next: true);
+                                  });
+                                })
                                     : Container(),
                               ]),
                         ),

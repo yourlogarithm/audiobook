@@ -16,12 +16,11 @@ class Book {
   late String author;
   late String path;
   late Duration length;
-  late Duration checkpoint;
+  late ValueNotifier<Duration> checkpoint;
   late bool defaultCover;
   late String cover;
   late String status;
-  List<Chapter> chapters = [];
-  late ValueNotifier<Duration> checkpointNotifier;
+  late List<Chapter> chapters;
 
   Book({
     required this.id,
@@ -34,14 +33,7 @@ class Book {
     required this.cover,
     required this.status,
     required this.chapters
-  }) {
-    checkpointNotifier = ValueNotifier(checkpoint);
-  }
-
-  void updateCheckpoint(Duration duration) {
-    checkpoint = duration;
-    checkpointNotifier.value = duration;
-  }
+  });
 
   Book.fromMap(Map<String, dynamic> map) {
     id = map['id'];
@@ -49,17 +41,13 @@ class Book {
     author = map['author'];
     path = map['path'];
     length = Duration(seconds: map['length']);
-    checkpoint = Duration(seconds: map['checkpoint']);
-    checkpointNotifier = ValueNotifier(checkpoint);
+    checkpoint = ValueNotifier(Duration(seconds: map['checkpoint']));
     defaultCover = map['defaultCover'] == 1 ? true : false;
     cover = map['cover'];
     status = map['status'];
     String chaptersEncoded = map['chapters'];
     Map<String, dynamic> chaptersMap = jsonDecode(chaptersEncoded);
-    print(chaptersMap);
-    chaptersMap.forEach((index, chapter) {
-      chapters.add(Chapter.fromMap(chapter));
-    });
+    chapters = chaptersMap.entries.map((e) => Chapter.fromMap(e.value)).toList();
   }
 
   Map<String, dynamic> toMap() {
@@ -73,12 +61,18 @@ class Book {
       'author': author,
       'path': path,
       'length': length.inSeconds,
-      'checkpoint': checkpoint.inSeconds,
+      'checkpoint': checkpoint.value.inSeconds,
       'defaultCover': defaultCover ? 1 : 0,
       'cover': cover,
       'status': status,
       'chapters': jsonEncode(chaptersMap)
     };
+  }
+
+  Chapter get nowChapter {
+    return chapters.where((chapter) {
+      return chapter.start <= checkpoint.value && checkpoint.value < chapter.end;
+    }).toList()[0];
   }
 
   Future<List<dynamic>> checkImage(Map<String, dynamic> map) async {
