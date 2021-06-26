@@ -28,7 +28,6 @@ class Content extends StatefulWidget {
 }
 
 class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
@@ -45,52 +44,55 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
               }
               return false;
             },
-            child: Scaffold(
-              resizeToAvoidBottomInset: false,
-              body: Navigator(
-                key: Content.contentNavigatorKey,
-                initialRoute: '/',
-                onGenerateRoute: (RouteSettings settings) {
-                  Widget builder;
-                  switch (settings.name) {
-                    case '/':
-                      builder = MainPage();
-                      break;
-                    case '/bookPage':
-                      Book book = settings.arguments as Book;
-                      builder = BookPage(book: book);
-                      bottomBarIndex.value = -1;
-                      break;
-                    case '/addBook':
-                      builder = AddBookPage();
-                      bottomBarIndex.value = -1;
-                      break;
-                    case '/changeCover':
-                      Book book = settings.arguments as Book;
-                      builder = ChangeCoverPage(book: book);
-                      bottomBarIndex.value = -1;
-                      break;
-                    default:
-                      throw Exception('Invalid route: ${settings.name}');
-                  }
-                  return PageRouteBuilder(
-                      transitionDuration: Duration(milliseconds: 300),
-                      transitionsBuilder:
-                          (context, animation, secAnimation, child) {
-                        animation = CurvedAnimation(
-                            parent: animation, curve: Curves.easeIn);
-                        return FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        );
-                      },
-                      pageBuilder: (context, animation, secAnimation) {
-                        return builder;
-                      });
-                },
-                onPopPage: (route, result) {
-                  return route.didPop(result);
-                },
+            child: SizedBox(
+              // height: MediaQuery.of(context).size.height * ,
+              child: Scaffold(
+                resizeToAvoidBottomInset: false,
+                body: Navigator(
+                  key: Content.contentNavigatorKey,
+                  initialRoute: '/',
+                  onGenerateRoute: (RouteSettings settings) {
+                    Widget builder;
+                    switch (settings.name) {
+                      case '/':
+                        builder = MainPage();
+                        break;
+                      case '/bookPage':
+                        Book book = settings.arguments as Book;
+                        builder = BookPage(book: book);
+                        bottomBarIndex.value = -1;
+                        break;
+                      case '/addBook':
+                        builder = AddBookPage();
+                        bottomBarIndex.value = -1;
+                        break;
+                      case '/changeCover':
+                        Book book = settings.arguments as Book;
+                        builder = ChangeCoverPage(book: book);
+                        bottomBarIndex.value = -1;
+                        break;
+                      default:
+                        throw Exception('Invalid route: ${settings.name}');
+                    }
+                    return PageRouteBuilder(
+                        transitionDuration: Duration(milliseconds: 300),
+                        transitionsBuilder:
+                            (context, animation, secAnimation, child) {
+                          animation = CurvedAnimation(
+                              parent: animation, curve: Curves.easeIn);
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        pageBuilder: (context, animation, secAnimation) {
+                          return builder;
+                        });
+                  },
+                  onPopPage: (route, result) {
+                    return route.didPop(result);
+                  },
+                ),
               ),
             ));
       },

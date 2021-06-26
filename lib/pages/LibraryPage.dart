@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:audiobook/classes/ad.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/bookFocusedMenu.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
@@ -69,8 +68,9 @@ class _LibraryPageState extends State<LibraryPage> with TickerProviderStateMixin
       appBar: appBar,
       body: ScrollConfiguration(
         behavior: MyBehavior(),
-        child: SizedBox(
+        child: Container(
           width: MediaQuery.of(context).size.width,
+          color: Settings.colors[1],
           child: TabBarView(
             controller: _tabController,
             children: [
@@ -96,8 +96,7 @@ class Category extends StatefulWidget {
 class _CategoryState extends State<Category> {
   List<Widget> getBooks() {
     List<Widget> output = [];
-    books.forEach((book) {
-      if (book.status == widget.category){
+    books.where((element) => element.status == widget.category).forEach((book) {
         output.add(
           Column(
             children: [
@@ -156,14 +155,14 @@ class _CategoryState extends State<Category> {
             ],
           )
         );
-      }
     });
     return output;
   }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
+        color: Settings.colors[1],
       child: ValueListenableBuilder(
         valueListenable: booksChanged,
         builder: (context, value, _) {

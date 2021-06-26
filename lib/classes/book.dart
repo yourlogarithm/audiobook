@@ -11,7 +11,7 @@ ValueNotifier<bool> booksChanged = ValueNotifier(false);
 List<Book> books = [];
 
 class Book {
-  int? id;
+  late int id;
   late String title;
   late String author;
   late String path;

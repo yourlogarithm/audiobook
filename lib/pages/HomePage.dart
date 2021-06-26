@@ -186,8 +186,7 @@ class _LibraryState extends State<Library> {
                               builder: (context, constraints) {
                                 return Container(
                                   height: constraints.maxHeight,
-                                  child: Image.file(File(book.cover),
-                                      fit: BoxFit.fill),
+                                  child: Image.file(File(book.cover), fit: BoxFit.fill),
                                 );
                               },
                             )),
@@ -257,6 +256,7 @@ class _LibraryState extends State<Library> {
     return Container(
         width: MediaQuery.of(context).size.width * 0.9 + 14,
         height: MediaQuery.of(context).size.height * 0.7,
+        color: Settings.colors[1],
         child: ScrollConfiguration(
             behavior: MyBehavior(),
             child: ValueListenableBuilder(

@@ -235,13 +235,13 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
           FocusedMenuItem(
               onPressed: () {
                 setState(() {
-                  widget.book.status = 'read';
+                  widget.book.status = widget.book.status == 'read' ? 'new' : 'read';
                 });
                 widget.book.update();
               },
               trailingIcon: Icon(Icons.done, color: Settings.colors[3]),
               title: Text(
-                'Mark as read',
+                'Mark as ${widget.book.status == 'read' ? 'new' : 'read'}',
                 style: TextStyle(
                     color: Settings.colors[3],
                     fontFamily: 'Montserrat',

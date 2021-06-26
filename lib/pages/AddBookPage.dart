@@ -8,7 +8,6 @@ import 'package:audiotagger/models/audiofile.dart';
 import 'package:audiotagger/models/tag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
-import 'package:flutter_ffmpeg/media_information.dart';
 import 'dart:io';
 import 'package:path/path.dart';
 import 'package:audiotagger/audiotagger.dart';
@@ -199,7 +198,7 @@ class FileExplorerAudio extends FileExplorer {
       cover = Settings.dir.path + '/' + 'defaultCover.png';
     }
     Book book = Book(
-      id: books.isEmpty ? 1 : books.last.id! + 1,
+      id: books.isEmpty ? 1 : books.last.id + 1,
       title: 'title',
       author: 'author',
       path: file.path,

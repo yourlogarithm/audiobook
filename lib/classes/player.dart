@@ -20,7 +20,7 @@ backgroundTaskEntrypoint() {
 void playBook(Book book) async {
   Future<void> _start() async {
     playerUrl = book.path;
-    Settings.lastListenedBook.value = book.id!;
+    Settings.lastListenedBook.value = book.id;
     Settings.write();
     await AudioService.start(backgroundTaskEntrypoint: backgroundTaskEntrypoint, params: book.toMap(), fastForwardInterval: Settings.forceStop, rewindInterval: Settings.rewind);
     if (book.status == 'new' || book.status == 'read') {
@@ -63,19 +63,20 @@ void forwardRewind(Book book, {bool forward = false}){
   book.update();
 }
 void nextPreviousChapter(Book book, {bool next = false}) {
+  Duration _position = book.checkpoint.value;
   if (next){
     if (book.nowChapter != book.chapters.last){
-      Duration _position = book.chapters[book.chapters.indexOf(book.nowChapter)+1].start;
-      AudioService.seekTo(_position);
-      book.checkpoint.value = _position;
+      _position = book.chapters[book.chapters.indexOf(book.nowChapter)+1].start;
     }
   } else {
     if (book.nowChapter != book.chapters.first){
-      Duration _position = book.chapters[book.chapters.indexOf(book.nowChapter)-1].start;
-      AudioService.seekTo(_position);
-      book.checkpoint.value = _position;
+      _position = book.chapters[book.chapters.indexOf(book.nowChapter)-1].start;
     }
   }
+  if (AudioService.running){
+    AudioService.seekTo(_position);
+  }
+  book.checkpoint.value = _position;
 }
 void setSleep() {
   if (!sleep.value) {
