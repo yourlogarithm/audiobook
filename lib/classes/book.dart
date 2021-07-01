@@ -11,26 +11,26 @@ ValueNotifier<bool> booksChanged = ValueNotifier(false);
 class BookProvider {
 
   static get nullBookProvider => BookProvider(
-      id: -1,
-      parentPath: 'none',
-      title: 'Start listening to an audiobook',
-      author: 'none',
-      elements: [
-        Book(
-          id: -1,
-          title: 'none',
-          author: 'none',
-          bookmarks: [],
-          chapters: [],
-          checkpoint: Duration(seconds: 0),
-          cover: Settings.defaultCover,
-          length: Duration(seconds: 100),
-          path: 'none',
-        )
-      ],
-      bookIndex: 0,
-      isBundle: false,
-      status: 'new'
+    id: -1,
+    parentPath: 'none',
+    title: 'Start listening to an audiobook',
+    author: 'none',
+    elements: [
+      Book(
+        id: -1,
+        title: 'none',
+        author: 'none',
+        chapters: [],
+        checkpoint: Duration(seconds: 0),
+        cover: Settings.defaultCover,
+        length: Duration(seconds: 100),
+        path: 'none',
+      )
+    ],
+    bookIndex: 0,
+    isBundle: false,
+    status: 'new',
+    bookmarks: []
   );
 
   BookProvider({
@@ -41,7 +41,8 @@ class BookProvider {
     required String status,
     required bool isBundle,
     required List<Book> elements,
-    required int bookIndex
+    required int bookIndex,
+    required List<Bookmark> bookmarks
   }){
     _id = id;
     _parentPath = parentPath;
@@ -50,7 +51,8 @@ class BookProvider {
     _status = status;
     _isBundle = isBundle;
     _elements = elements;
-    _bookIndex = bookIndex;
+    _bookIndex = ValueNotifier(bookIndex);
+    _bookmarks = bookmarks;
   }
 
   BookProvider.fromMap(Map<String, dynamic> map) {
@@ -62,7 +64,8 @@ class BookProvider {
     _status = map['status'];
     _isBundle = map['isBundle'] == 1 ? true : false;
     _elements = decodeElements(map['elements']);
-    _bookIndex = map['bookIndex'];
+    _bookIndex = ValueNotifier(map['bookIndex']);
+    _bookmarks = decodeBookmarks(map['bookmarks']);
   }
 
   Map<String, dynamic> toMap() {
@@ -75,15 +78,25 @@ class BookProvider {
       'status': status,
       'isBundle': isBundle ? 1 : 0,
       'elements': elementsEncoded,
-      'bookIndex': bookIndex
+      'bookIndex': bookIndex.value,
+      'bookmarks': encode(bookmarks)
     };
   }
 
   Map<String, dynamic> toAudioTaskMap() {
-    Map<String, dynamic> map = toMap();
-    map['isBundle'] = isBundle;
-    map['elements'] = List.generate(elements.length, (index) => elements[index].toMap());
-    return map;
+    return {
+      'id': id,
+      'parentPath': _parentPath,
+      'title': title,
+      'author': author,
+      'cover': cover,
+      'status': status,
+      'isBundle': isBundle,
+      'bookIndex': bookIndex.value,
+      'elements': List.generate(elements.length, (index) => elements[index].toMap()),
+      'bookmarks': List.generate(bookmarks.length, (index) => bookmarks[index].toMap()),
+      'hasCover': hasCover
+    };
   }
 
   late int _id;
@@ -94,7 +107,8 @@ class BookProvider {
   late String _status;
   late bool _isBundle;
   late List<Book> _elements;
-  late int _bookIndex;
+  late ValueNotifier<int> _bookIndex;
+  late List<Bookmark> _bookmarks;
 
   int get id => _id;
   String get title => _title;
@@ -112,9 +126,10 @@ class BookProvider {
   String get status => _status;
   bool get isBundle => _isBundle;
   List<Book> get elements => _elements;
-  int get bookIndex => _bookIndex;
+  ValueNotifier<int> get bookIndex => _bookIndex;
+  List<Bookmark> get bookmarks => _bookmarks;
 
-  Book get currentBook => _elements[_bookIndex];
+  Book get currentBook => _elements[_bookIndex.value];
 
   String get elementsEncoded {
     return encode(elements);
@@ -122,6 +137,14 @@ class BookProvider {
 
   List<Book> decodeElements(String encoded) {
     return decode(encoded, Book);
+  }
+
+  String get bookmarksEncoded {
+    return encode(bookmarks);
+  }
+
+  List<Bookmark> decodeBookmarks(String encoded) {
+    return decode(encoded, Bookmark);
   }
 
   void changeTitle(String newTitle) {
@@ -145,7 +168,7 @@ class BookProvider {
     update();
   }
   void changeIndex(int newBookIndex) {
-    _bookIndex = newBookIndex;
+    _bookIndex.value = newBookIndex;
     update();
   }
 
@@ -156,6 +179,15 @@ class BookProvider {
       same = true;
     }
     return same;
+  }
+
+  void addBookmark(Bookmark bookmark) {
+    _bookmarks.add(bookmark);
+    update();
+  }
+  void removeBookmark(Bookmark bookmark) {
+    _bookmarks.remove(bookmark);
+    update();
   }
   
   Future<void> insert(BuildContext context) async {
@@ -213,7 +245,6 @@ class Book {
     required Duration checkpoint,
     required Duration length,
     required String cover,
-    required List<Bookmark> bookmarks,
     required List<Chapter> chapters
   }) {
     _id = id;
@@ -223,7 +254,6 @@ class Book {
     _checkpoint = ValueNotifier(checkpoint);
     _length = length;
     _cover = cover;
-    _bookmarks = bookmarks;
     _chapters = chapters;
   }
 
@@ -235,7 +265,6 @@ class Book {
     _checkpoint = ValueNotifier(Duration(seconds: map['checkpoint']));
     _length = Duration(seconds: map['length']);
     _cover = map['cover'];
-    _bookmarks = decodeBookmarks(map['bookmarks']);
     _chapters = decodeChapters(map['chapters']);
   }
 
@@ -248,7 +277,6 @@ class Book {
       'checkpoint': checkpoint.value.inSeconds,
       'length': length.inSeconds,
       'cover': cover,
-      'bookmarks': bookmarksEncoded,
       'chapters': chaptersEncoded
     };
   }
@@ -260,7 +288,6 @@ class Book {
   late ValueNotifier<Duration> _checkpoint;
   late Duration _length;
   late String _cover;
-  late List<Bookmark> _bookmarks;
   late List<Chapter> _chapters;
 
   int get id => _id;
@@ -270,7 +297,6 @@ class Book {
   ValueNotifier<Duration> get checkpoint => _checkpoint;
   Duration get length => _length;
   String get cover => _cover;
-  List<Bookmark> get bookmarks => _bookmarks;
   List<Chapter> get chapters => _chapters;
   dynamic get currentChapter {
     try {
@@ -288,13 +314,6 @@ class Book {
     return decode(encoded, Chapter);
   }
 
-  String get bookmarksEncoded {
-    return encode(bookmarks);
-  }
-
-  List<Bookmark> decodeBookmarks(String encoded) {
-    return decode(encoded, Bookmark);
-  }
   void changeTitle(String newTitle) {
     _title = newTitle;
   }
@@ -303,14 +322,6 @@ class Book {
   }
   void setCheckpoint(Duration arg) {
     _checkpoint.value = arg;
-    allBooks.firstWhere((element) => element.id == id).update();
-  }
-  void addBookmark(Bookmark bookmark) {
-    _bookmarks.add(bookmark);
-    allBooks.firstWhere((element) => element.id == id).update();
-  }
-  void removeBookmark(Bookmark bookmark) {
-    _bookmarks.remove(bookmark);
     allBooks.firstWhere((element) => element.id == id).update();
   }
 }
@@ -336,25 +347,29 @@ class Chapter {
 
 class Bookmark {
   late int _id;
+  late int _bookIndex;
   late String _title;
   late Duration _time;
-  Bookmark({required int id, required String title, required Duration time}){
+  Bookmark({required int id, required int bookIndex, required String title, required Duration time}){
     _id = id;
+    _bookIndex = bookIndex;
     _title = title;
     _time = time;
   }
   Bookmark.fromMap(Map<String, dynamic> map) {
-    _id = map['index'];
+    _id = map['id'];
+    _bookIndex = map['bookIndex'];
     _title = map['title'];
     _time = Duration(seconds: map['time']);
   }
   Map<String, dynamic> toMap() {
-    return {'index': _id, 'title': _title, 'time': _time.inSeconds};
+    return {'id': _id, 'bookIndex': _bookIndex, 'title': _title, 'time': _time.inSeconds};
   }
 
   int get id => _id;
   String get title => _title;
   Duration get time => _time;
+  int get bookIndex => _bookIndex;
 
   void changeTitle(String newTitle) {
     _title = newTitle;

@@ -3,10 +3,10 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/player.dart';
-import 'package:audiobook/classes/scrollBehavior.dart';
+import 'package:audiobook/widgets/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
+import 'package:audiobook/widgets/progressBar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,170 +25,174 @@ class _BookPageState extends State<BookPage> {
 
   @override
   Widget build(BuildContext context) {
-    print(widget.bookProvider.currentBook.checkpoint.value);
+    print(widget.bookProvider.bookIndex.value);
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          GestureDetector(
-            onTap: () {
-              if (bookPageContextMenu.value.runtimeType == ContextMenu) {
-                bookPageContextMenu.value = Container();
-              }
-            },
-            child: ValueListenableBuilder(
-              valueListenable: bookPageContextMenu,
-              builder: (context, value, _) {
-                double amount = 0;
-                if (value.runtimeType != Container){
-                  amount = 0.7;
-                }
-                return ColorFiltered(
-                  colorFilter: ColorFilter.mode(Color.fromRGBO(0, 0, 0, amount), BlendMode.darken),
-                  child: Container(
-                    color: Settings.colors[1],
-                    width: MediaQuery.of(context).size.width,
-                    height: MediaQuery.of(context).size.height,
-                    child: SafeArea(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.025),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(MediaQuery.of(context).size.height * 0.02),
-                                    width: MediaQuery.of(context).size.height * 0.4,
-                                    height: MediaQuery.of(context).size.height * 0.4,
-                                    decoration: BoxDecoration(
-                                        color: Settings.colors[0],
-                                        borderRadius: BorderRadius.circular(25),
-                                        boxShadow: Settings.theme.value == 'Dark'
-                                        ? [
-                                        BoxShadow(
-                                            color: Color.fromRGBO(0, 0, 0, 0.1),
-                                            spreadRadius: 1,
-                                            blurRadius: 5)
-                                        ]
-                                            : []
-                                    ),
-                                    child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: LayoutBuilder(
-                                          builder: (layoutcontext, constraints) {
-                                            return Container(
-                                              height: constraints.maxHeight,
-                                              child: Image.file(File(widget.bookProvider.cover), fit: BoxFit.fill),
-                                            );
-                                          },
-                                        )),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 20),
-                                    child: AudioProgressBar(bookProvider: widget.bookProvider, isBookPage: true),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(
-                                width: MediaQuery.of(context).size.width * 0.9,
+      body: ValueListenableBuilder(
+          valueListenable: widget.bookProvider.bookIndex,
+          builder: (context, value, _) {
+            return Stack(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+                      bookPageContextMenu.value = Container();
+                    }
+                  },
+                  child: ValueListenableBuilder(
+                    valueListenable: bookPageContextMenu,
+                    builder: (context, value, _) {
+                      double amount = 0;
+                      if (value.runtimeType != Container){
+                        amount = 0.7;
+                      }
+                      return ColorFiltered(
+                        colorFilter: ColorFilter.mode(Color.fromRGBO(0, 0, 0, amount), BlendMode.darken),
+                        child: Container(
+                          color: Settings.colors[1],
+                          width: MediaQuery.of(context).size.width,
+                          height: MediaQuery.of(context).size.height,
+                          child: SafeArea(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.025),
+                              child: Center(
                                 child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    AutoSizeText(
-                                        widget.bookProvider.author,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontFamily: 'Poppins',
-                                          color: Settings.colors[4],
-                                          fontSize: MediaQuery.of(context).size.width * 0.045
-                                        )
+                                    Column(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.all(MediaQuery.of(context).size.height * 0.02),
+                                          width: MediaQuery.of(context).size.height * 0.4,
+                                          height: MediaQuery.of(context).size.height * 0.4,
+                                          decoration: BoxDecoration(
+                                              color: Settings.colors[0],
+                                              borderRadius: BorderRadius.circular(25),
+                                              boxShadow: Settings.theme.value == 'Dark'
+                                              ? [
+                                              BoxShadow(
+                                                  color: Color.fromRGBO(0, 0, 0, 0.1),
+                                                  spreadRadius: 1,
+                                                  blurRadius: 5)
+                                              ]
+                                                  : []
+                                          ),
+                                          child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(20),
+                                              child: LayoutBuilder(
+                                                builder: (layoutcontext, constraints) {
+                                                  return Container(
+                                                    height: constraints.maxHeight,
+                                                    child: Image.file(File(widget.bookProvider.cover), fit: BoxFit.fill),
+                                                  );
+                                                },
+                                              )),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 20),
+                                          child: AudioProgressBar(bookProvider: widget.bookProvider, isBookPage: true),
+                                        ),
+                                      ],
                                     ),
-                                    AutoSizeText(
-                                      widget.bookProvider.title,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 4,
-                                      minFontSize: 10,
-                                      maxFontSize: 20,
-                                      stepGranularity: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: Settings.colors[3],
-                                        fontFamily: 'Poppins',
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: MediaQuery.of(context).size.width * 0.05
-                                      ),
-                                    ),
-                                    ValueListenableBuilder(
-                                      valueListenable: widget.bookProvider.currentBook.checkpoint,
-                                      builder: (context, value, _) {
-                                        if (widget.bookProvider.currentBook.chapters.isNotEmpty || widget.bookProvider.isBundle){
-                                          String text;
-                                          if (widget.bookProvider.isBundle){
-                                            if (widget.bookProvider.currentBook.chapters.isNotEmpty){
-                                              text = widget.bookProvider.currentBook.currentChapter.title;
-                                            } else {
-                                              text = widget.bookProvider.currentBook.title;
-                                            }
-                                          } else {
-                                            text = widget.bookProvider.currentBook.currentChapter.title;
-                                          }
-                                          return AutoSizeText(
-                                            text,
+                                    SizedBox(
+                                      width: MediaQuery.of(context).size.width * 0.9,
+                                      child: Column(
+                                        children: [
+                                          AutoSizeText(
+                                              widget.bookProvider.author,
+                                              textAlign: TextAlign.center,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                  fontFamily: 'Poppins',
+                                                  color: Settings.colors[4],
+                                                  fontSize: MediaQuery.of(context).size.width * 0.045
+                                              )
+                                          ),
+                                          AutoSizeText(
+                                            widget.bookProvider.title,
                                             textAlign: TextAlign.center,
-                                            maxLines: 2,
+                                            maxLines: 4,
+                                            minFontSize: 10,
+                                            maxFontSize: 20,
+                                            stepGranularity: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
-                                                color: Settings.colors[5],
+                                                color: Settings.colors[3],
                                                 fontFamily: 'Poppins',
-                                                fontWeight: FontWeight.w400,
+                                                fontWeight: FontWeight.bold,
                                                 fontSize: MediaQuery.of(context).size.width * 0.05
                                             ),
-                                          );
-                                        }
-                                        return Container();
-                                      },
+                                          ),
+                                          ValueListenableBuilder(
+                                            valueListenable: widget.bookProvider.currentBook.checkpoint,
+                                            builder: (context, value, _) {
+                                              if (widget.bookProvider.currentBook.chapters.isNotEmpty || widget.bookProvider.isBundle){
+                                                String text;
+                                                if (widget.bookProvider.isBundle){
+                                                  if (widget.bookProvider.currentBook.chapters.isNotEmpty){
+                                                    text = widget.bookProvider.currentBook.currentChapter.title;
+                                                  } else {
+                                                    text = widget.bookProvider.currentBook.title;
+                                                  }
+                                                } else {
+                                                  text = widget.bookProvider.currentBook.currentChapter.title;
+                                                }
+                                                return AutoSizeText(
+                                                  text,
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                      color: Settings.colors[5],
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight: FontWeight.w400,
+                                                      fontSize: MediaQuery.of(context).size.width * 0.05
+                                                  ),
+                                                );
+                                              }
+                                              return Container();
+                                            },
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      width: MediaQuery.of(context).size.width * 0.9,
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          BookmarkIcon(bookProvider: widget.bookProvider),
+                                          SleepTimerIcon(),
+                                          Lock()
+                                        ],
+                                      ),
                                     )
                                   ],
                                 ),
                               ),
-                              Container(
-                                width: MediaQuery.of(context).size.width * 0.9,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    BookmarkIcon(bookProvider: widget.bookProvider),
-                                    SleepTimerIcon(),
-                                    Lock()
-                                  ],
-                                ),
-                              )
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-          ),
-          Positioned(
-            width: MediaQuery.of(context).size.width * 0.6,
-            left: MediaQuery.of(context).size.width * 0.05,
-            bottom: MediaQuery.of(context).size.height * 0.1,
-            child: ValueListenableBuilder<Widget>(
-                valueListenable: bookPageContextMenu,
-                builder: (context, value, _) {
-                  return AnimatedSwitcher(duration: Duration(milliseconds: 500), child: value);
-                }
-            ),
-          )
-        ],
-      ),
+                ),
+                Positioned(
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  left: MediaQuery.of(context).size.width * 0.05,
+                  bottom: MediaQuery.of(context).size.height * 0.1,
+                  child: ValueListenableBuilder<Widget>(
+                      valueListenable: bookPageContextMenu,
+                      builder: (context, value, _) {
+                        return AnimatedSwitcher(duration: Duration(milliseconds: 500), child: value);
+                      }
+                  ),
+                )
+              ],
+            );
+      })
     );
   }
 }
@@ -230,10 +234,11 @@ class _BookmarkIconState extends State<BookmarkIcon>
     if (!active) {
       Bookmark bookmark = Bookmark(
           id: widget.bookProvider.id,
+          bookIndex: widget.bookProvider.bookIndex.value,
           title: convertDuration(widget.bookProvider.currentBook.checkpoint.value),
           time: widget.bookProvider.currentBook.checkpoint.value
       );
-      widget.bookProvider.currentBook.addBookmark(bookmark);
+      widget.bookProvider.addBookmark(bookmark);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: Duration(seconds: 1),
           backgroundColor: Settings.colors[6],
@@ -273,7 +278,7 @@ class _BookmarkIconState extends State<BookmarkIcon>
         });
       },
       onLongPress: () {
-        if (widget.bookProvider.currentBook.bookmarks.isNotEmpty){
+        if (widget.bookProvider.bookmarks.isNotEmpty){
           setState(() {
             bookPageContextMenu.value = ContextMenu(context: context, bookProvider: widget.bookProvider);
           });
@@ -314,7 +319,7 @@ class _ContextMenuState extends State<ContextMenu> {
 
   List<Widget> getBookmarks() {
     List<Widget> output = [];
-    List<Bookmark> bookmarks = widget.bookProvider.currentBook.bookmarks;
+    List<Bookmark> bookmarks = widget.bookProvider.bookmarks;
     bookmarks.sort((a, b) => b.time.compareTo(a.time));
     for (int i = 0; i < bookmarks.length; i++){
       BoxDecoration decoration = BoxDecoration(color: Settings.colors[0]);
@@ -466,7 +471,7 @@ class _ContextMenuState extends State<ContextMenu> {
                                 child: InkWell(
                                   onTap: () {
                                     setState(() {
-                                      widget.bookProvider.currentBook.removeBookmark(bookmarks[i]);
+                                      widget.bookProvider.removeBookmark(bookmarks[i]);
                                       if (bookPageContextMenu.value.runtimeType == ContextMenu) {
                                         bookPageContextMenu.value = Container();
                                       }

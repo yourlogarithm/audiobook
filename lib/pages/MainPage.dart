@@ -1,4 +1,4 @@
-import 'package:audiobook/classes/scrollBehavior.dart';
+import 'package:audiobook/widgets/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/pages/HomePage.dart';
 import 'package:audiobook/pages/LibraryPage.dart';

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/explorer.dart';
-import 'package:audiobook/classes/scrollBehavior.dart';
+import 'package:audiobook/widgets/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
 import 'package:flutter/material.dart';
@@ -144,14 +144,15 @@ class FileExplorerAudio extends FileExplorer {
     if (!isBundle) {
       Book book = await selectFile(file);
       BookProvider bookProvider = BookProvider(
-          id: allBooks.isNotEmpty ? allBooks.last.id + 1 : 1,
-          parentPath: file.path,
-          title: book.title,
-          author: book.author,
-          status: 'new',
-          isBundle: false,
-          elements: [book],
-          bookIndex: 0
+        id: allBooks.isNotEmpty ? allBooks.last.id + 1 : 1,
+        parentPath: file.path,
+        title: book.title,
+        author: book.author,
+        status: 'new',
+        isBundle: false,
+        elements: [book],
+        bookIndex: 0,
+        bookmarks: []
       );
       await bookProvider.insert(context).whenComplete(() => moveHome());
       moveBlocked = false;
@@ -171,14 +172,15 @@ class FileExplorerAudio extends FileExplorer {
           }
         }
         BookProvider bookProvider = BookProvider(
-            id: allBooks.isNotEmpty ? allBooks.last.id + 1 : 1,
-            parentPath: file.path,
-            title: dpath.basename(file.path),
-            author: sameAuthor ? books[0].author : 'Multiple authors',
-            status: 'new',
-            isBundle: true,
-            elements: books,
-            bookIndex: 0
+          id: allBooks.isNotEmpty ? allBooks.last.id + 1 : 1,
+          parentPath: file.path,
+          title: dpath.basename(file.path),
+          author: sameAuthor ? books[0].author : 'Multiple authors',
+          status: 'new',
+          isBundle: true,
+          elements: books,
+          bookIndex: 0,
+          bookmarks: []
         );
         await bookProvider.insert(context).whenComplete(() => moveHome());
         moveBlocked = false;
@@ -244,7 +246,6 @@ class FileExplorerAudio extends FileExplorer {
       length: Duration(seconds: length),
       cover: cover!,
       checkpoint: Duration(seconds: 0),
-      bookmarks: [],
       chapters: chapters,
     );
     if (data['format']['tags'] != null) {

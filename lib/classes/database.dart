@@ -33,7 +33,8 @@ class DatabaseProvider {
                   'status STRING, '
                   'isBundle INTEGER, '
                   'elements BLOB, '
-                  'bookIndex INTEGER'
+                  'bookIndex INTEGER, '
+                  'bookmarks BLOB'
               ')'
           );
         }
