@@ -1,12 +1,13 @@
+import 'dart:async';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'classes/settings.dart';
-import 'dart:io';
 
 class Loading extends StatefulWidget {
-  // const Loading({Key key}) : super(key: key);
+  final bool isFirst;
+  const Loading({this.isFirst = true});
 
   @override
   _LoadingState createState() => _LoadingState();
@@ -14,14 +15,21 @@ class Loading extends StatefulWidget {
 
 class _LoadingState extends State<Loading> {
 
+  Future<void> load() async {
+    Settings.init().whenComplete(() async {
+      await DatabaseProvider.getBookProviders.then((value) => allBooks = value);
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/content');
+      }
+    });
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    DatabaseProvider.getBooks().then((value) {
-      books = value;
-      Settings.init().whenComplete(() {
-        Navigator.pushReplacementNamed(context, '/content');
-      });
-    });
+    if (widget.isFirst){
+      load();
+    }
     return Scaffold(
       backgroundColor: Color(0xff2E3247),
       body: Center(

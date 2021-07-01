@@ -5,6 +5,7 @@ import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -44,16 +45,10 @@ class _HomePageState extends State<HomePage> {
                   child: ValueListenableBuilder(
                     valueListenable: Settings.lastListenedBook,
                     builder: (context, value, _) {
-                      List<Book> foundLastListenedBook = books.where((book) => book.id == value).toList();
-                      Book book;
-                      if (foundLastListenedBook.isEmpty){
-                        book = Book(id: -1, title: 'Start listening to an audiobook', author: '', checkpoint: ValueNotifier(Duration(seconds: 0)), defaultCover: true, cover: Settings.dir.path + '/' 'defaultCover.png', length: Duration(seconds: 100), path: 'none', status: 'read', chapters: []);
-                      } else {
-                        book = foundLastListenedBook[0];
-                      }
+                      BookProvider bookProvider = allBooks.firstWhere((bookProvider) => bookProvider.id == value, orElse: () => BookProvider.nullBookProvider);
                       return GestureDetector(
                         onTap: () {
-                          Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: book);
+                          Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: bookProvider);
                         },
                         child: Column(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -67,30 +62,32 @@ class _HomePageState extends State<HomePage> {
                                         flex: 1,
                                         child: ClipRRect(
                                             borderRadius: BorderRadius.circular(10),
-                                            child: Image.file(File(book.cover), fit: BoxFit.fill)
+                                            child: Image.file(File(bookProvider.cover), fit: BoxFit.fill)
                                         )
                                     ),
                                     Expanded(
                                       flex: 2,
                                       child: Padding(
                                         padding: EdgeInsets.only(left: MediaQuery.of(context).size.width * 0.05),
-                                        child: Text(
-                                          book.title,
+                                        child: AutoSizeText(
+                                          bookProvider.title,
                                           textAlign: TextAlign.center,
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 4,
+                                          minFontSize: MediaQuery.of(context).size.height >= 720 ? 18 : 14,
                                           style: TextStyle(
                                               color: Settings.colors[3],
                                               fontFamily: 'Poppins',
                                               fontWeight: FontWeight.w600,
-                                              fontSize: 18),
+                                              // fontSize: 18
+                                          ),
                                         ),
                                       ),
                                     )
                                   ],
                                 ),
                               ),
-                              HomePageTimeline(book: book)
+                              AudioProgressBar(bookProvider: bookProvider)
                             ],
                           ),
                       );
@@ -130,107 +127,117 @@ class _HomePageState extends State<HomePage> {
 
 class Library extends StatefulWidget {
   @override
-  _LibraryState createState() => _LibraryState();
+  LibraryState createState() => LibraryState();
 }
 
-class _LibraryState extends State<Library> {
+class LibraryState extends State<Library> {
+
+  static ValueNotifier<int> deleting = ValueNotifier(-1);
+  static Duration deleteDuration = Duration(milliseconds: 300);
 
   List<Widget> library() {
-    books.sort((a, b) => a.title.compareTo(b.title));
+    allBooks.sort((a, b) => a.title.compareTo(b.title));
     List<Widget> output = [];
-    Widget _container(Book book, int index) {
+    Widget _container(BookProvider bookProvider, int index) {
       return FocusedMenuBook(
-          book: book,
-          child: Container(
-            height: MediaQuery.of(context).size.height * 0.2,
-            margin: EdgeInsets.fromLTRB(7, MediaQuery.of(context).size.height * 0.0125, 7, MediaQuery.of(context).size.height * 0.0125),
-            decoration: BoxDecoration(
-                color: Settings.colors[2],
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: Settings.theme.value == 'Dark'
-                    ? [
-                        BoxShadow(
-                            color: Color.fromRGBO(0, 0, 0, 0.2),
-                            blurRadius: 7,
-                            spreadRadius: 1.5)
-                      ]
-                    : [
-                        BoxShadow(
-                            color: Color.fromRGBO(0, 0, 0, 0.1),
-                            blurRadius: 7,
-                            spreadRadius: 0.1)
-                      ]),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  // bottomBarIndex.value = -1;
-                  Content.contentNavigatorKey.currentState!
-                      .pushReplacementNamed(
-                    '/bookPage',
-                    arguments: book,
-                  );
-                },
-                highlightColor: Settings.colors[5],
-                splashColor: Settings.colors[5],
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: ClipRRect(
-                            borderRadius: BorderRadius.circular(15),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                return Container(
-                                  height: constraints.maxHeight,
-                                  child: Image.file(File(book.cover), fit: BoxFit.fill),
-                                );
-                              },
-                            )),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Text(
-                                book.title,
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 4,
-                                style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontWeight: FontWeight.bold,
-                                    color: Settings.colors[3]),
+          index: index,
+          bookProvider: bookProvider,
+          child: ValueListenableBuilder<int>(
+            valueListenable: deleting,
+            builder: (context, value, _) {
+              return AnimatedContainer(
+                duration: deleteDuration,
+                height: index == value ? 0 : MediaQuery.of(context).size.height * 0.2,
+                margin: EdgeInsets.fromLTRB(7, MediaQuery.of(context).size.height * 0.0125, 7, MediaQuery.of(context).size.height * 0.0125),
+                decoration: BoxDecoration(
+                    color: Settings.colors[2],
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: Settings.theme.value == 'Dark'
+                        ? [
+                            BoxShadow(
+                                color: Color.fromRGBO(0, 0, 0, 0.2),
+                                blurRadius: 7,
+                                spreadRadius: 1.5
+                            )
+                          ]
+                        : [
+                            BoxShadow(
+                                color: Color.fromRGBO(0, 0, 0, 0.1),
+                                blurRadius: 7,
+                                spreadRadius: 0.1)
+                          ]),
+                child: SingleChildScrollView(
+                  physics: NeverScrollableScrollPhysics(),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: bookProvider);
+                      },
+                      highlightColor: Settings.colors[5],
+                      splashColor: Settings.colors[5],
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: EdgeInsets.all(10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(15),
+                                  child: LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return Container(
+                                        height: index == value ? 0 : MediaQuery.of(context).size.height * 0.2 - 20,
+                                        child: Image.file(File(bookProvider.cover), fit: BoxFit.fill),
+                                      );
+                                    },
+                                  )),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Container(
+                                margin: EdgeInsets.symmetric(horizontal: 10),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    AutoSizeText(
+                                      bookProvider.title,
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 4,
+                                      style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.bold,
+                                          color: Settings.colors[3]),
+                                    ),
+                                    AutoSizeText(
+                                      bookProvider.author,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          color: Settings.colors[4]),
+                                    )
+                                  ],
+                                ),
                               ),
-                              Text(
-                                book.author,
-                                textAlign: TextAlign.center,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    color: Settings.colors[4]),
-                              )
-                            ],
-                          ),
+                            )
+                          ],
                         ),
-                      )
-                    ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ));
+              );
+            },
+          )
+      );
     }
-
-    List<Book> nonRead = books.where((element) => element.status != 'read').toList();
+    List<BookProvider> nonRead = allBooks.where((element) => element.status != 'read').toList();
     for (int i = 0; i < nonRead.length; i++){
       if (i == nonRead.length - 1) {
         output.add(Padding(
@@ -256,7 +263,6 @@ class _LibraryState extends State<Library> {
     return Container(
         width: MediaQuery.of(context).size.width * 0.9 + 14,
         height: MediaQuery.of(context).size.height * 0.7,
-        color: Settings.colors[1],
         child: ScrollConfiguration(
             behavior: MyBehavior(),
             child: ValueListenableBuilder(

@@ -21,6 +21,8 @@ class Settings {
   static late File defaultImage;
   static late ValueNotifier<int> lastListenedBook;
 
+  static String get defaultCover => '${dir.path}/defaultCover.png';
+
   static Future<void> init() async {
     dir = await getApplicationDocumentsDirectory();
     jsonFile = File(dir.path + '/' + 'settings.json');

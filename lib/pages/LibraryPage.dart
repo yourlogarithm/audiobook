@@ -4,6 +4,7 @@ import 'package:audiobook/classes/bookFocusedMenu.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -96,66 +97,70 @@ class Category extends StatefulWidget {
 class _CategoryState extends State<Category> {
   List<Widget> getBooks() {
     List<Widget> output = [];
-    books.where((element) => element.status == widget.category).forEach((book) {
-        output.add(
+    List<BookProvider> filteredBooks = allBooks.where((element) => element.status == widget.category).toList();
+    for(int i = 0; i < filteredBooks.length; i++) {
+      output.add(
           Column(
             children: [
               Expanded(
-                flex: 3,
-                child: FocusedMenuBook(
-                  book: book,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Container(
-                        width: constraints.maxWidth,
-                        margin: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                        decoration: BoxDecoration(
-                            color: Settings.colors[0],
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.1), spreadRadius: 1, blurRadius: 5)]
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(15),
-                            highlightColor: Settings.colors[5],
-                            splashColor: Settings.colors[5],
-                            onTap: () {
-                              Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: book);
-                            },
-                            child: Padding(
-                              padding: EdgeInsets.all(10),
-                              child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.file(File(book.cover), fit: BoxFit.fill)
-                              ),
+                  flex: 3,
+                  child: FocusedMenuBook(
+                      index: -1,
+                      bookProvider: filteredBooks[i],
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Container(
+                            width: constraints.maxWidth,
+                            margin: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                            decoration: BoxDecoration(
+                                color: Settings.colors[0],
+                                borderRadius: BorderRadius.circular(15),
+                                boxShadow: [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.1), spreadRadius: 1, blurRadius: 5)]
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(15),
+                                highlightColor: Settings.colors[5],
+                                splashColor: Settings.colors[5],
+                                onTap: () {
+                                  Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: filteredBooks[i]);
+                                },
+                                child: Padding(
+                                  padding: EdgeInsets.all(10),
+                                  child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.file(File(filteredBooks[i].cover), fit: BoxFit.fill)
+                                  ),
+                                ),
+                              ),
+                            )
+                          );
+                        },
+                      )
                   )
-                )
               ),
               Expanded(
                   flex: 1,
-                  child: Center(
-                      child: Text(
-                        book.title,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 5),
+                    child: AutoSizeText(
+                      allBooks[i].title,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                      style: TextStyle(
                           color: Settings.colors[3],
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w500
-                        ),
-                      )
+                      ),
+                    ),
                   )
               )
             ],
           )
-        );
-    });
+      );
+    }
     return output;
   }
 

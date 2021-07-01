@@ -29,8 +29,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: FloatingActionButton(
             heroTag: null,
             onPressed: () {
-              showDialog(context: context, builder: (_) => dialog)
-                  .whenComplete(() => setState(() {}));
+              showDialog(context: context, builder: (_) => dialog).whenComplete(() => setState(() {}));
             },
             elevation: 0,
             backgroundColor: Settings.colors[6],
@@ -56,91 +55,88 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-            padding: EdgeInsets.symmetric(horizontal: 25),
+    return Container(
+        color: Settings.theme.value == 'Dark' ? Settings.colors[2] : Settings.colors[1],
+      child: Column(
+        children: [
+          Container(
+              padding: EdgeInsets.symmetric(horizontal: 25),
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height * 0.1,
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Settings',
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 20,
+                          color: Settings.colors[3]),
+                    ),
+                  ],
+                ),
+              )),
+          Container(
             width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height * 0.1,
-            color: Settings.theme.value == 'Dark'
-                ? Settings.colors[2]
-                : Settings.colors[1],
-            child: SafeArea(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Settings',
-                    style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 20,
-                        color: Settings.colors[3]),
-                  ),
-                ],
-              ),
-            )),
-        Container(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height * 0.9,
-          color: Settings.theme.value == 'Dark'
-              ? Settings.colors[2]
-              : Settings.colors[1],
-          child: Container(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).size.height * 0.06),
-            decoration: BoxDecoration(
-                color: Settings.colors[0],
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-                boxShadow: Settings.theme.value == 'Dark'
-                    ? [
-                        BoxShadow(
-                            color: Color.fromRGBO(0, 0, 0, 0.1),
-                            offset: Offset(0, -3),
-                            blurRadius: 5,
-                            spreadRadius: 1)
-                      ]
-                    : [
-                        BoxShadow(
-                            color: Color.fromRGBO(0, 0, 0, 0.05),
-                            blurRadius: 7,
-                            spreadRadius: 0.1)
-                      ]),
+            height: MediaQuery.of(context).size.height * 0.9,
             child: Container(
-              margin: EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      button(Icons.timer, 'Sleep\ntimer', SleepTimer(),
-                          context),
-                      button(
-                          Icons.brush_outlined, 'Theme', Theme(), context),
-                      button(Icons.fast_rewind_outlined, 'Rewind', Rewind(),
-                          context),
-                    ],
-                  ),
-                  Container(
-                    margin: EdgeInsets.only(top: 20),
-                    child: Row(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).size.height * 0.06),
+              decoration: BoxDecoration(
+                  color: Settings.colors[0],
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+                  boxShadow: Settings.theme.value == 'Dark'
+                      ? [
+                          BoxShadow(
+                              color: Color.fromRGBO(0, 0, 0, 0.1),
+                              offset: Offset(0, -3),
+                              blurRadius: 5,
+                              spreadRadius: 1)
+                        ]
+                      : [
+                          BoxShadow(
+                              color: Color.fromRGBO(0, 0, 0, 0.05),
+                              blurRadius: 7,
+                              spreadRadius: 0.1)
+                        ]),
+              child: Container(
+                margin: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        button(Icons.highlight_off, 'Force\nstop',
-                            ForceStop(), context),
-                        button(Icons.folder_open, 'Default\nfolder',
-                            DefaultFolder(), context),
+                        button(Icons.timer, 'Sleep\ntimer', SleepTimer(),
+                            context),
+                        button(
+                            Icons.brush_outlined, 'Theme', Theme(), context),
+                        button(Icons.fast_rewind_outlined, 'Rewind', Rewind(),
+                            context),
                       ],
                     ),
-                  ),
-                ],
+                    Container(
+                      margin: EdgeInsets.only(top: 20),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          button(Icons.highlight_off, 'Force\nstop',
+                              ForceStop(), context),
+                          button(Icons.folder_open, 'Default\nfolder',
+                              DefaultFolder(), context),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        )
-      ],
+          )
+        ],
+      ),
     );
   }
 }
@@ -176,7 +172,8 @@ class _SleepTimerState extends State<SleepTimer> {
             color: Settings.theme.value == 'Dark'
                 ? Settings.colors[2]
                 : Settings.colors[1],
-            borderRadius: BorderRadius.circular(25)),
+            borderRadius: BorderRadius.circular(25)
+        ),
         child: Center(
           child: NumberPicker(
               onChanged: (value) => setState(() => duration = value),

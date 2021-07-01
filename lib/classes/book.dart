@@ -1,149 +1,317 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 
+List<BookProvider> allBooks = [];
 ValueNotifier<bool> booksChanged = ValueNotifier(false);
-List<Book> books = [];
 
-class Book {
-  late int id;
-  late String title;
-  late String author;
-  late String path;
-  late Duration length;
-  late ValueNotifier<Duration> checkpoint;
-  late bool defaultCover;
-  late String cover;
-  late String status;
-  late List<Chapter> chapters;
+class BookProvider {
 
-  Book({
-    required this.id,
-    required this.title,
-    required this.author,
-    required this.path,
-    required this.length,
-    required this.checkpoint,
-    required this.defaultCover,
-    required this.cover,
-    required this.status,
-    required this.chapters
-  });
+  static get nullBookProvider => BookProvider(
+      id: -1,
+      parentPath: 'none',
+      title: 'Start listening to an audiobook',
+      author: 'none',
+      elements: [
+        Book(
+          id: -1,
+          title: 'none',
+          author: 'none',
+          bookmarks: [],
+          chapters: [],
+          checkpoint: Duration(seconds: 0),
+          cover: Settings.defaultCover,
+          length: Duration(seconds: 100),
+          path: 'none',
+        )
+      ],
+      bookIndex: 0,
+      isBundle: false,
+      status: 'new'
+  );
 
-  Book.fromMap(Map<String, dynamic> map) {
-    id = map['id'];
-    title = map['title'];
-    author = map['author'];
-    path = map['path'];
-    length = Duration(seconds: map['length']);
-    checkpoint = ValueNotifier(Duration(seconds: map['checkpoint']));
-    defaultCover = map['defaultCover'] == 1 ? true : false;
-    cover = map['cover'];
-    status = map['status'];
-    String chaptersEncoded = map['chapters'];
-    Map<String, dynamic> chaptersMap = jsonDecode(chaptersEncoded);
-    chapters = chaptersMap.entries.map((e) => Chapter.fromMap(e.value)).toList();
+  BookProvider({
+    required int id,
+    required String parentPath,
+    required String title,
+    required String author,
+    required String status,
+    required bool isBundle,
+    required List<Book> elements,
+    required int bookIndex
+  }){
+    _id = id;
+    _parentPath = parentPath;
+    _title = title;
+    _author = author;
+    _status = status;
+    _isBundle = isBundle;
+    _elements = elements;
+    _bookIndex = bookIndex;
+  }
+
+  BookProvider.fromMap(Map<String, dynamic> map) {
+    _id = map['id'];
+    _parentPath = map['parentPath'];
+    _title = map['title'];
+    _author = map['author'];
+    _cover = map['cover'];
+    _status = map['status'];
+    _isBundle = map['isBundle'] == 1 ? true : false;
+    _elements = decodeElements(map['elements']);
+    _bookIndex = map['bookIndex'];
   }
 
   Map<String, dynamic> toMap() {
-    Map<String, Map<String, dynamic>> chaptersMap = {};
-    for (int i = 0; i < chapters.length; i ++) {
-      chaptersMap[i.toString()] = chapters[i].toMap();
-    }
     return {
       'id': id,
+      'parentPath': _parentPath,
       'title': title,
       'author': author,
-      'path': path,
-      'length': length.inSeconds,
-      'checkpoint': checkpoint.value.inSeconds,
-      'defaultCover': defaultCover ? 1 : 0,
       'cover': cover,
       'status': status,
-      'chapters': jsonEncode(chaptersMap)
+      'isBundle': isBundle ? 1 : 0,
+      'elements': elementsEncoded,
+      'bookIndex': bookIndex
     };
   }
 
-  Chapter get nowChapter {
-    return chapters.where((chapter) {
-      return chapter.start <= checkpoint.value && checkpoint.value < chapter.end;
-    }).toList()[0];
+  Map<String, dynamic> toAudioTaskMap() {
+    Map<String, dynamic> map = toMap();
+    map['isBundle'] = isBundle;
+    map['elements'] = List.generate(elements.length, (index) => elements[index].toMap());
+    return map;
   }
 
-  Future<List<dynamic>> checkImage(Map<String, dynamic> map) async {
-    bool edited = false;
-    bool? localDefaultCover;
-    String? localCover;
-    if (map['defaultCover'] == 0) {
-      if (!await File(map['cover']).exists()) {
-        localDefaultCover = true;
-        localCover = 'images/defaultcover.png';
-        edited = true;
-      }
+  late int _id;
+  late String _parentPath;
+  late String _title;
+  late String _author;
+  String? _cover;
+  late String _status;
+  late bool _isBundle;
+  late List<Book> _elements;
+  late int _bookIndex;
+
+  int get id => _id;
+  String get title => _title;
+  String get author => _author;
+  bool get hasCover => _cover != null;
+  String get cover {
+    if (_cover != null) {
+      return _cover!;
     }
-    if (!edited) {
-      localDefaultCover = map['defaultCover'];
-      localCover = map['cover'];
-    }
-    return [localDefaultCover!, localCover!];
+    return currentBook.cover;
+  }
+  String coverOf(int index) {
+    return _elements[index].cover;
+  }
+  String get status => _status;
+  bool get isBundle => _isBundle;
+  List<Book> get elements => _elements;
+  int get bookIndex => _bookIndex;
+
+  Book get currentBook => _elements[_bookIndex];
+
+  String get elementsEncoded {
+    return encode(elements);
   }
 
-  bool compareTo(Book book) {
+  List<Book> decodeElements(String encoded) {
+    return decode(encoded, Book);
+  }
+
+  void changeTitle(String newTitle) {
+    _title = newTitle;
+    update();
+  }
+  void changeAuthor(String newAuthor) {
+    _author = newAuthor;
+    update();
+  }
+  Future<void> changeCover(String path) async {
+    _cover = path;
+    await update();
+  }
+  void setDefaultCover() {
+    _cover = Settings.dir.path + '/' + 'defaultCover.png';
+    update();
+  }
+  void changeStatus(String newStatus) {
+    _status = newStatus;
+    update();
+  }
+  void changeIndex(int newBookIndex) {
+    _bookIndex = newBookIndex;
+    update();
+  }
+
+  bool compareTo(BookProvider bookProvider){
     bool same = false;
-    if (this.length == book.length && this.path == book.path) {
+    if (title == bookProvider.title && isBundle == bookProvider.isBundle || _parentPath == bookProvider._parentPath) {
+      print(_parentPath);
       same = true;
     }
     return same;
   }
-
-  Future<void> setDefaultCover() async {
-    defaultCover = true;
-    cover = Settings.dir.path + '/' + 'defaultCover.png';
-    this.update();
-  }
-
-  Future<void> changeCover(File file) async {
-    Directory? extStorage = await getExternalStorageDirectory();
-    if (extStorage != null) {
-      file.copy(extStorage.path + '/' + basename(file.path));
-      defaultCover = false;
-      cover = file.path;
-      this.update();
-    }
-  }
-
-  Future<void> insert() async {
-    Database db = await DatabaseProvider.getDatabase;
-    List<Book> _books = await DatabaseProvider.getBooks();
+  
+  Future<void> insert(BuildContext context) async {
     bool same = false;
-    _books.forEach((book) {
-      if (book.compareTo(this)) {
+    for (int i = 0; i < allBooks.length; i++){
+      if (allBooks[i].compareTo(this)){
         same = true;
+        break;
       }
-    });
-    if (!same) {
-      books.add(this);
+    }
+    if (!same){
+      allBooks.add(this);
       booksChanged.value = !booksChanged.value;
-      await db.insert('books', this.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+      DatabaseProvider.getDatabase.then((db) {
+        db.insert('bookProviders', toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: Duration(seconds: 1),
+          backgroundColor: Settings.colors[6],
+          content: Text(
+            'Book already exists',
+            style: TextStyle(
+                fontFamily: 'Montserrat', fontWeight: FontWeight.w600),
+          )
+        )
+      );
+    }
+  }
+  
+  Future<void> remove() async {
+    allBooks.remove(this);
+    booksChanged.value = !booksChanged.value;
+    DatabaseProvider.getDatabase.then((db) {
+      db.delete('bookProviders', where: 'id = ?', whereArgs: [id]);
+    });
+  }
+  
+  Future<void> update() async {
+    booksChanged.value = !booksChanged.value;
+    DatabaseProvider.getDatabase.then((db) {
+      db.update('bookProviders', toMap(), where: 'id = ?', whereArgs: [id]);
+    });
+  }
+  
+}
+
+class Book {
+
+  Book({
+    required int id,
+    required String title,
+    required String author,
+    required String path,
+    required Duration checkpoint,
+    required Duration length,
+    required String cover,
+    required List<Bookmark> bookmarks,
+    required List<Chapter> chapters
+  }) {
+    _id = id;
+    _title = title;
+    _author = author;
+    _path = path;
+    _checkpoint = ValueNotifier(checkpoint);
+    _length = length;
+    _cover = cover;
+    _bookmarks = bookmarks;
+    _chapters = chapters;
+  }
+
+  Book.fromMap(Map<String, dynamic> map) {
+    _id = map['id'];
+    _title = map['title'];
+    _author = map['author'];
+    _path = map['path'];
+    _checkpoint = ValueNotifier(Duration(seconds: map['checkpoint']));
+    _length = Duration(seconds: map['length']);
+    _cover = map['cover'];
+    _bookmarks = decodeBookmarks(map['bookmarks']);
+    _chapters = decodeChapters(map['chapters']);
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': _id,
+      'title': title,
+      'author': author,
+      'path': path,
+      'checkpoint': checkpoint.value.inSeconds,
+      'length': length.inSeconds,
+      'cover': cover,
+      'bookmarks': bookmarksEncoded,
+      'chapters': chaptersEncoded
+    };
+  }
+
+  late int _id;
+  late String _title;
+  late String _author;
+  late String _path;
+  late ValueNotifier<Duration> _checkpoint;
+  late Duration _length;
+  late String _cover;
+  late List<Bookmark> _bookmarks;
+  late List<Chapter> _chapters;
+
+  int get id => _id;
+  String get title => _title;
+  String get author => _author;
+  String get path => _path;
+  ValueNotifier<Duration> get checkpoint => _checkpoint;
+  Duration get length => _length;
+  String get cover => _cover;
+  List<Bookmark> get bookmarks => _bookmarks;
+  List<Chapter> get chapters => _chapters;
+  dynamic get currentChapter {
+    try {
+      return chapters.firstWhere((element) => element.start <= checkpoint.value && element.end >= checkpoint.value);
+    } catch (e) {
+      return null;
     }
   }
 
-  Future<void> remove() async {
-    Database db = await DatabaseProvider.getDatabase;
-    books.remove(this);
-    booksChanged.value = !booksChanged.value;
-    await db.delete('books', where: 'id = ?', whereArgs: [this.id]);
+  String get chaptersEncoded {
+    return encode(chapters);
   }
 
-  Future<void> update() async {
-    Database db = await DatabaseProvider.getDatabase;
-    booksChanged.value = !booksChanged.value;
-    await db.update('books', this.toMap(), where: 'id = ?', whereArgs: [this.id]);
+  List<Chapter> decodeChapters(String encoded) {
+    return decode(encoded, Chapter);
+  }
+
+  String get bookmarksEncoded {
+    return encode(bookmarks);
+  }
+
+  List<Bookmark> decodeBookmarks(String encoded) {
+    return decode(encoded, Bookmark);
+  }
+  void changeTitle(String newTitle) {
+    _title = newTitle;
+  }
+  void changeAuthor(String newAuthor){
+    _author = newAuthor;
+  }
+  void setCheckpoint(Duration arg) {
+    _checkpoint.value = arg;
+    allBooks.firstWhere((element) => element.id == id).update();
+  }
+  void addBookmark(Bookmark bookmark) {
+    _bookmarks.add(bookmark);
+    allBooks.firstWhere((element) => element.id == id).update();
+  }
+  void removeBookmark(Bookmark bookmark) {
+    _bookmarks.remove(bookmark);
+    allBooks.firstWhere((element) => element.id == id).update();
   }
 }
 
@@ -165,3 +333,58 @@ class Chapter {
     };
   }
 }
+
+class Bookmark {
+  late int _id;
+  late String _title;
+  late Duration _time;
+  Bookmark({required int id, required String title, required Duration time}){
+    _id = id;
+    _title = title;
+    _time = time;
+  }
+  Bookmark.fromMap(Map<String, dynamic> map) {
+    _id = map['index'];
+    _title = map['title'];
+    _time = Duration(seconds: map['time']);
+  }
+  Map<String, dynamic> toMap() {
+    return {'index': _id, 'title': _title, 'time': _time.inSeconds};
+  }
+
+  int get id => _id;
+  String get title => _title;
+  Duration get time => _time;
+
+  void changeTitle(String newTitle) {
+    _title = newTitle;
+    allBooks.firstWhere((element) => element.id == id).update();
+  }
+}
+
+String encode(dynamic element) {
+  List<Map<String, dynamic>> maps = List.generate(element.length, (index) {
+    return element[index].toMap();
+  });
+  return jsonEncode(maps);
+}
+
+
+dynamic decode(String encoded, Type type) {
+  List<dynamic> maps = jsonDecode(encoded);
+  switch (type) {
+    case Book:
+      return List.generate(maps.length, (index) {
+        return Book.fromMap(maps[index]);
+      });
+    case Chapter:
+      return List.generate(maps.length, (index) {
+        return Chapter.fromMap(maps[index]);
+      });
+    case Bookmark:
+      return List.generate(maps.length, (index) {
+        return Bookmark.fromMap(maps[index]);
+      });
+  }
+}
+

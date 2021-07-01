@@ -1,14 +1,17 @@
+import 'dart:async';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
+import 'package:audiobook/pages/HomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:focused_menu/focused_menu.dart';
 import 'package:focused_menu/modals.dart';
 
 class FocusedMenuBook extends StatefulWidget {
-  final Book book;
+  final BookProvider bookProvider;
+  final int index;
   final Widget child;
-  const FocusedMenuBook({required this.book, required this.child});
+  const FocusedMenuBook({required this.bookProvider, required this.child, required this.index});
 
   @override
   _FocusedMenuBookState createState() => _FocusedMenuBookState();
@@ -25,7 +28,7 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
           FocusedMenuItem(
               onPressed: () {
                 showDialog(context: context, builder: (context) {
-                  TextEditingController _textController = TextEditingController(text: widget.book.title);
+                  TextEditingController _textController = TextEditingController(text: widget.bookProvider.title);
                   return AlertDialog(
                       backgroundColor: Settings.colors[0],
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
@@ -79,9 +82,8 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
                           onTap: () {
                             if (_textController.text.length >= 1 && _textController.text[0] != ' '){
                               setState(() {
-                                widget.book.title = _textController.text;
+                                widget.bookProvider.changeTitle(_textController.text);
                               });
-                              widget.book.update();
                             }
                             Navigator.pop(context);
                           },
@@ -114,7 +116,7 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
           FocusedMenuItem(
               onPressed: () {
                 showDialog(context: context, builder: (context) {
-                  TextEditingController _textController = TextEditingController(text: widget.book.author);
+                  TextEditingController _textController = TextEditingController(text: widget.bookProvider.author);
                   return AlertDialog(
                       backgroundColor: Settings.colors[0],
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
@@ -169,9 +171,8 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
                           onTap: () {
                             if (_textController.text.length >= 1 && _textController.text[0] != ' '){
                               setState(() {
-                                widget.book.author = _textController.text;
+                                widget.bookProvider.changeAuthor(_textController.text);
                               });
-                              widget.book.update();
                             }
                             Navigator.pop(context);
                           },
@@ -203,7 +204,7 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
           ),
           FocusedMenuItem(
               onPressed: () {
-                Content.contentNavigatorKey.currentState!.pushReplacementNamed('/changeCover', arguments: widget.book);
+                Content.contentNavigatorKey.currentState!.pushReplacementNamed('/changeCover', arguments: widget.bookProvider);
               },
               trailingIcon:
               Icon(Icons.image_outlined, color: Settings.colors[3]),
@@ -218,7 +219,7 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
           FocusedMenuItem(
               onPressed: () {
                 setState(() {
-                  widget.book.setDefaultCover();
+                  widget.bookProvider.setDefaultCover();
                 });
               },
               trailingIcon:
@@ -234,14 +235,22 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
           ),
           FocusedMenuItem(
               onPressed: () {
-                setState(() {
-                  widget.book.status = widget.book.status == 'read' ? 'new' : 'read';
+                LibraryState.deleting.value = widget.index;
+                Timer(Duration(milliseconds: 300), () {
+                  LibraryState.deleteDuration = Duration.zero;
+                  setState(() {
+                    widget.bookProvider.changeStatus(widget.bookProvider.status == 'read' ? 'new' : 'read');
+                    widget.bookProvider.update();
+                    LibraryState.deleting.value = -1;
+                  });
+                  Timer(Duration(milliseconds: 300), () {
+                    LibraryState.deleteDuration = Duration(milliseconds: 300);
+                  });
                 });
-                widget.book.update();
               },
               trailingIcon: Icon(Icons.done, color: Settings.colors[3]),
               title: Text(
-                'Mark as ${widget.book.status == 'read' ? 'new' : 'read'}',
+                'Mark as ${widget.bookProvider.status == 'read' ? 'new' : 'read'}',
                 style: TextStyle(
                     color: Settings.colors[3],
                     fontFamily: 'Montserrat',
@@ -251,8 +260,16 @@ class _FocusedMenuBookState extends State<FocusedMenuBook> {
           ),
           FocusedMenuItem(
               onPressed: () {
-                setState(() {
-                  widget.book.remove();
+                LibraryState.deleting.value = widget.index;
+                Timer(Duration(milliseconds: 300), () {
+                  LibraryState.deleteDuration = Duration.zero;
+                  setState(() {
+                    widget.bookProvider.remove();
+                    LibraryState.deleting.value = -1;
+                  });
+                  Timer(Duration(milliseconds: 300), () {
+                    LibraryState.deleteDuration = Duration(milliseconds: 300);
+                  });
                 });
               },
               trailingIcon:

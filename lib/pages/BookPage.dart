@@ -3,34 +3,38 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/bookmark.dart';
 import 'package:audiobook/classes/database.dart';
 import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 ValueNotifier<Widget> bookPageContextMenu = ValueNotifier(Container());
 
 class BookPage extends StatefulWidget {
-  final Book book;
-  const BookPage({required this.book});
+  final BookProvider bookProvider;
+  const BookPage({required this.bookProvider});
 
   @override
   _BookPageState createState() => _BookPageState();
 }
 
 class _BookPageState extends State<BookPage> {
+
   @override
   Widget build(BuildContext context) {
+    print(widget.bookProvider.currentBook.checkpoint.value);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           GestureDetector(
             onTap: () {
-              bookPageContextMenu.value = Container();
+              if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+                bookPageContextMenu.value = Container();
+              }
             },
             child: ValueListenableBuilder(
               valueListenable: bookPageContextMenu,
@@ -56,9 +60,9 @@ class _BookPageState extends State<BookPage> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Container(
-                                    padding: EdgeInsets.all(15),
-                                    width: MediaQuery.of(context).size.width * 0.8,
-                                    height: MediaQuery.of(context).size.width * 0.8,
+                                    padding: EdgeInsets.all(MediaQuery.of(context).size.height * 0.02),
+                                    width: MediaQuery.of(context).size.height * 0.4,
+                                    height: MediaQuery.of(context).size.height * 0.4,
                                     decoration: BoxDecoration(
                                         color: Settings.colors[0],
                                         borderRadius: BorderRadius.circular(25),
@@ -77,59 +81,71 @@ class _BookPageState extends State<BookPage> {
                                           builder: (layoutcontext, constraints) {
                                             return Container(
                                               height: constraints.maxHeight,
-                                              child: Image.file(File(widget.book.cover), fit: BoxFit.fill),
+                                              child: Image.file(File(widget.bookProvider.cover), fit: BoxFit.fill),
                                             );
                                           },
                                         )),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.only(top: 20),
-                                    child: BookPageTimeline(book: widget.book),
+                                    child: AudioProgressBar(bookProvider: widget.bookProvider, isBookPage: true),
                                   ),
                                 ],
                               ),
-                              AnimatedContainer(
-                                duration: Duration(milliseconds: 500),
+                              SizedBox(
                                 width: MediaQuery.of(context).size.width * 0.9,
                                 child: Column(
                                   children: [
-                                    Text(
-                                        widget.book.author,
+                                    AutoSizeText(
+                                        widget.bookProvider.author,
                                         textAlign: TextAlign.center,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                            fontFamily: 'Poppins',
-                                            fontSize: 16,
-                                            color: Settings.colors[4]
+                                          fontFamily: 'Poppins',
+                                          color: Settings.colors[4],
+                                          fontSize: MediaQuery.of(context).size.width * 0.045
                                         )
                                     ),
-                                    Text(
-                                      widget.book.title,
+                                    AutoSizeText(
+                                      widget.bookProvider.title,
                                       textAlign: TextAlign.center,
                                       maxLines: 4,
+                                      minFontSize: 10,
+                                      maxFontSize: 20,
+                                      stepGranularity: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
-                                          color: Settings.colors[3],
-                                          fontFamily: 'Poppins',
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 20
+                                        color: Settings.colors[3],
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: MediaQuery.of(context).size.width * 0.05
                                       ),
                                     ),
                                     ValueListenableBuilder(
-                                      valueListenable: widget.book.checkpoint,
+                                      valueListenable: widget.bookProvider.currentBook.checkpoint,
                                       builder: (context, value, _) {
-                                        if (widget.book.chapters.isNotEmpty){
-                                          return Text(
-                                            widget.book.nowChapter.title,
+                                        if (widget.bookProvider.currentBook.chapters.isNotEmpty || widget.bookProvider.isBundle){
+                                          String text;
+                                          if (widget.bookProvider.isBundle){
+                                            if (widget.bookProvider.currentBook.chapters.isNotEmpty){
+                                              text = widget.bookProvider.currentBook.currentChapter.title;
+                                            } else {
+                                              text = widget.bookProvider.currentBook.title;
+                                            }
+                                          } else {
+                                            text = widget.bookProvider.currentBook.currentChapter.title;
+                                          }
+                                          return AutoSizeText(
+                                            text,
                                             textAlign: TextAlign.center,
-                                            maxLines: 4,
+                                            maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                                 color: Settings.colors[5],
                                                 fontFamily: 'Poppins',
                                                 fontWeight: FontWeight.w400,
-                                                fontSize: 18
+                                                fontSize: MediaQuery.of(context).size.width * 0.05
                                             ),
                                           );
                                         }
@@ -144,7 +160,7 @@ class _BookPageState extends State<BookPage> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    BookmarkIcon(book: widget.book),
+                                    BookmarkIcon(bookProvider: widget.bookProvider),
                                     SleepTimerIcon(),
                                     Lock()
                                   ],
@@ -162,7 +178,6 @@ class _BookPageState extends State<BookPage> {
           ),
           Positioned(
             width: MediaQuery.of(context).size.width * 0.6,
-            // height: MediaQuery.of(context).size.height * 0.25,
             left: MediaQuery.of(context).size.width * 0.05,
             bottom: MediaQuery.of(context).size.height * 0.1,
             child: ValueListenableBuilder<Widget>(
@@ -181,8 +196,8 @@ class _BookPageState extends State<BookPage> {
 GlobalKey bookmarkIconKey = GlobalKey();
 
 class BookmarkIcon extends StatefulWidget {
-  final Book book;
-  BookmarkIcon({required this.book});
+  final BookProvider bookProvider;
+  BookmarkIcon({required this.bookProvider});
   @override
   _BookmarkIconState createState() => _BookmarkIconState();
 }
@@ -214,11 +229,11 @@ class _BookmarkIconState extends State<BookmarkIcon>
   void addBookmark() async {
     if (!active) {
       Bookmark bookmark = Bookmark(
-          bookTitle: widget.book.title,
-          title: convertDuration(widget.book.checkpoint.value),
-          time: widget.book.checkpoint.value
+          id: widget.bookProvider.id,
+          title: convertDuration(widget.bookProvider.currentBook.checkpoint.value),
+          time: widget.bookProvider.currentBook.checkpoint.value
       );
-      bookmark.insert();
+      widget.bookProvider.currentBook.addBookmark(bookmark);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: Duration(seconds: 1),
           backgroundColor: Settings.colors[6],
@@ -226,7 +241,9 @@ class _BookmarkIconState extends State<BookmarkIcon>
             'Bookmark added',
             style: TextStyle(
                 fontFamily: 'Montserrat', fontWeight: FontWeight.w600),
-          )));
+          )
+      )
+      );
       active = true;
       _animationController.animateTo(100);
       setState(() {
@@ -249,18 +266,18 @@ class _BookmarkIconState extends State<BookmarkIcon>
     return GestureDetector(
       onTap: () {
         setState(() {
-          bookPageContextMenu.value = Container();
+          if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+            bookPageContextMenu.value = Container();
+          }
           addBookmark();
         });
       },
       onLongPress: () {
-        DatabaseProvider.getBookmarks(widget.book.title).then((value) {
-          if (value.isNotEmpty) {
-            setState(() {
-              bookPageContextMenu.value = ContextMenu(context: context, book: widget.book);
-            });
-          }
-        });
+        if (widget.bookProvider.currentBook.bookmarks.isNotEmpty){
+          setState(() {
+            bookPageContextMenu.value = ContextMenu(context: context, bookProvider: widget.bookProvider);
+          });
+        }
       },
       child: Stack(
         key: bookmarkIconKey,
@@ -268,13 +285,13 @@ class _BookmarkIconState extends State<BookmarkIcon>
           AnimatedBuilder(
             animation: _colorTween,
             builder: (context, child) {
-              return Icon(Icons.bookmark_outline, color: _colorTween.value, size: 42);
+              return Icon(Icons.bookmark_outline, color: _colorTween.value, size: MediaQuery.of(context).size.height * 0.06);
               },
           ),
           AnimatedOpacity(
             opacity: filledBookmarkIconOpacity,
             duration: Duration(milliseconds: 300),
-            child: Icon(Icons.bookmark, color: Settings.colors[5], size: 42),
+            child: Icon(Icons.bookmark, color: Settings.colors[5], size: MediaQuery.of(context).size.height * 0.06),
           ),
         ],
       ),
@@ -284,8 +301,8 @@ class _BookmarkIconState extends State<BookmarkIcon>
 
 class ContextMenu extends StatefulWidget {
   final BuildContext context;
-  final Book book;
-  const ContextMenu({required this.context, required this.book});
+  final BookProvider bookProvider;
+  const ContextMenu({required this.context, required this.bookProvider});
 
   @override
   _ContextMenuState createState() => _ContextMenuState();
@@ -295,9 +312,9 @@ class _ContextMenuState extends State<ContextMenu> {
 
   TextEditingController _textEditingController = TextEditingController();
 
-  Future<List<Widget>> getBookmarks() async {
-    List<Bookmark> bookmarks = await DatabaseProvider.getBookmarks(widget.book.title);
+  List<Widget> getBookmarks() {
     List<Widget> output = [];
+    List<Bookmark> bookmarks = widget.bookProvider.currentBook.bookmarks;
     bookmarks.sort((a, b) => b.time.compareTo(a.time));
     for (int i = 0; i < bookmarks.length; i++){
       BoxDecoration decoration = BoxDecoration(color: Settings.colors[0]);
@@ -321,13 +338,14 @@ class _ContextMenuState extends State<ContextMenu> {
               child: InkWell(
                 borderRadius: radius,
                 onTap: () {
-                  widget.book.checkpoint.value = bookmarks[i].time;
+                  widget.bookProvider.currentBook.setCheckpoint(bookmarks[i].time);
                   if (AudioService.running){
                     AudioService.seekTo(bookmarks[i].time);
                   }
-                  widget.book.update();
                   setState(() {
-                    bookPageContextMenu.value = Container();
+                    if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+                      bookPageContextMenu.value = Container();
+                    }
                   });
                 },
                 child: Padding(
@@ -336,8 +354,9 @@ class _ContextMenuState extends State<ContextMenu> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
+                        child: AutoSizeText(
                           bookmarks[i].title,
+                          maxLines: 1,
                           style: TextStyle(
                               color: Settings.colors[3],
                               fontFamily: 'Montserrat',
@@ -410,8 +429,7 @@ class _ContextMenuState extends State<ContextMenu> {
                                             onTap: () {
                                               String bookmarkTitle = _textEditingController.text;
                                               if (bookmarkTitle.isNotEmpty){
-                                                bookmarks[i].title = bookmarkTitle;
-                                                bookmarks[i].update();
+                                                bookmarks[i].changeTitle(bookmarkTitle);
                                               }
                                               Navigator.pop(context);
                                             },
@@ -432,7 +450,9 @@ class _ContextMenuState extends State<ContextMenu> {
                                       );
                                     }).whenComplete(() {
                                       setState(() {
-                                        bookPageContextMenu.value = Container();
+                                        if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+                                          bookPageContextMenu.value = Container();
+                                        }
                                       });
                                     });
                                   },
@@ -446,13 +466,10 @@ class _ContextMenuState extends State<ContextMenu> {
                                 child: InkWell(
                                   onTap: () {
                                     setState(() {
-                                      bookmarks[i].remove().then((value){
-                                        if (value.isEmpty) {
-                                          setState(() {
-                                            bookPageContextMenu.value = Container();
-                                          });
-                                        }
-                                      });
+                                      widget.bookProvider.currentBook.removeBookmark(bookmarks[i]);
+                                      if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+                                        bookPageContextMenu.value = Container();
+                                      }
                                     });
                                   },
                                   child: Icon(Icons.delete, color: Color(0xffde4949),  size: 26),
@@ -475,37 +492,27 @@ class _ContextMenuState extends State<ContextMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Widget>>(
-        future: getBookmarks(),
-        builder: (context, snapshot){
-          if (snapshot.hasData){
-            if (snapshot.data!.isNotEmpty){
-              return Container(
-                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
-                  decoration: BoxDecoration(
-                    color: Settings.colors[2],
-                    borderRadius: BorderRadius.circular(10)
-                  ),
-                  child: ScrollConfiguration(
-                    behavior: MyBehavior(),
-                    child: GridView.count(
-                      shrinkWrap: true,
-                      crossAxisCount: 1,
-                      childAspectRatio: 4,
-                      mainAxisSpacing: 1,
-                      padding: EdgeInsets.all(0),
-                      children: snapshot.data!,
-                    ),
-                  )
-              );
-            } else {
-              return Container();
-            }
-          } else {
-            return Container();
-          }
-        }
-    );
+    if (getBookmarks().isNotEmpty){
+      return Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.3),
+          decoration: BoxDecoration(
+              color: Settings.colors[2],
+              borderRadius: BorderRadius.circular(10)
+          ),
+          child: ScrollConfiguration(
+            behavior: MyBehavior(),
+            child: GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 1,
+              childAspectRatio: 4,
+              mainAxisSpacing: 1,
+              padding: EdgeInsets.all(0),
+              children: getBookmarks(),
+            ),
+          )
+      );
+    }
+    return Container();
   }
 }
 
@@ -544,18 +551,20 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
         builder: (context, child) {
           return GestureDetector(
               onTap: () {
-                bookPageContextMenu.value = Container();
-                setSleep();
+                if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+                  bookPageContextMenu.value = Container();
+                }
+                // AudioController.setSleep();
               },
               child: ValueListenableBuilder<bool>(
-                valueListenable: sleep,
+                valueListenable: AudioController.sleep,
                 builder: (context, value, _) {
                   if (value) {
                     _animationController.animateTo(100);
                   } else {
                     _animationController.animateTo(0);
                   }
-                  return Icon(Icons.timer, color: _colorTween.value, size: 42);
+                  return Icon(Icons.timer, color: _colorTween.value, size: MediaQuery.of(context).size.height * 0.06);
                 }
               )
           );
@@ -602,7 +611,9 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
       builder: (context, child) {
         return GestureDetector(
             onTap: () {
-              bookPageContextMenu.value = Container();
+              if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+                bookPageContextMenu.value = Container();
+              }
               bookPageIsLocked.value = !bookPageIsLocked.value;
               if (bookPageIsLocked.value) {
                 _animationController.animateTo(100);
@@ -616,7 +627,7 @@ class _LockState extends State<Lock> with SingleTickerProviderStateMixin {
                 });
               }
             },
-            child: Icon(icon, color: _colorTween.value, size: 42));
+            child: Icon(icon, color: _colorTween.value, size: MediaQuery.of(context).size.height * 0.06));
       },
     );
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/pages/BookPage.dart';
@@ -6,114 +7,161 @@ import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 
-String playerUrl = '';
-
-ValueNotifier<bool> sleep = ValueNotifier(false);
-late Timer sleepTimer;
-Timer? forceStopTimer;
-
 backgroundTaskEntrypoint() {
   AudioServiceBackground.run(() => MyAudioPlayerTask());
 }
 
+class AudioController {
 
-void playBook(Book book) async {
-  Future<void> _start() async {
-    playerUrl = book.path;
-    Settings.lastListenedBook.value = book.id;
-    Settings.write();
-    await AudioService.start(backgroundTaskEntrypoint: backgroundTaskEntrypoint, params: book.toMap(), fastForwardInterval: Settings.forceStop, rewindInterval: Settings.rewind);
-    if (book.status == 'new' || book.status == 'read') {
-      book.status = 'reading';
-      book.update();
-    }
-    if (book.checkpoint.value != book.length) {
-      await AudioService.seekTo(book.checkpoint.value);
-    } else {
-      await AudioService.seekTo(Duration(seconds: 0));
-    }
-  }
-  if (AudioService.running) {
-    if (AudioService.playbackState.playing && playerUrl == book.path) {
-      AudioService.pause();
-    } else {
-      if (playerUrl == book.path) {
-        AudioService.play();
-      } else {
-        await AudioService.stop();
-        _start();
-      }
-    }
-  } else {
-    _start();
-  }
-}
+  static BookProvider? _currentBookProvider;
 
-void forwardRewind(Book book, {bool forward = false}){
-  Duration edited = forward ? book.checkpoint.value+Settings.rewind : book.checkpoint.value-Settings.rewind;
-  if (edited < Duration(seconds: 0)) {
-    edited = Duration(seconds: 0);
-  } else if (edited > book.length){
-    edited = book.length;
-  }
-  book.checkpoint.value = edited;
-  if (AudioService.running){
-    forward ? AudioService.fastForward(): AudioService.rewind();
-  }
-  book.update();
-}
-void nextPreviousChapter(Book book, {bool next = false}) {
-  Duration _position = book.checkpoint.value;
-  if (next){
-    if (book.nowChapter != book.chapters.last){
-      _position = book.chapters[book.chapters.indexOf(book.nowChapter)+1].start;
-    }
-  } else {
-    if (book.nowChapter != book.chapters.first){
-      _position = book.chapters[book.chapters.indexOf(book.nowChapter)-1].start;
-    }
-  }
-  if (AudioService.running){
-    AudioService.seekTo(_position);
-  }
-  book.checkpoint.value = _position;
-}
-void setSleep() {
-  if (!sleep.value) {
-    sleepTimer = Timer(Settings.sleep, () {
-      sleep.value = false;
-      if (AudioService.running) {
+  static ValueNotifier<bool> sleep = ValueNotifier(false);
+  static Timer? sleepTimer;
+  static Timer? forceStopTimer;
+
+  static StreamSubscription<Duration>? position;
+
+  static void streamPosition() {
+    position = AudioService.createPositionStream(steps: 1, minPeriod: Duration(milliseconds: 1000), maxPeriod: Duration(milliseconds: 1000)).listen((event) {});
+    position!.onData((data) {
+      if (data > _currentBookProvider!.currentBook.length) {
+        _currentBookProvider!.currentBook.setCheckpoint(_currentBookProvider!.currentBook.length);
         AudioService.stop();
       }
+      if (data.inSeconds != 0){
+        _currentBookProvider!.currentBook.setCheckpoint(data);
+      }
     });
-  } else {
-    sleepTimer.cancel();
   }
-  sleep.value = !sleep.value;
+
+  static Future<void> _start(BookProvider bookProvider) async {
+    _currentBookProvider = bookProvider;
+    Settings.lastListenedBook.value = bookProvider.id;
+    Settings.write();
+    await AudioService.start(
+        backgroundTaskEntrypoint: backgroundTaskEntrypoint,
+        params: bookProvider.toAudioTaskMap(),
+        rewindInterval: Settings.rewind,
+        fastForwardInterval: Settings.forceStop
+    );
+    if (bookProvider.status == 'new' || bookProvider.status == 'read') {
+      bookProvider.changeStatus('reading');
+    }
+    if (bookProvider.currentBook.checkpoint.value != bookProvider.currentBook.length) {
+      await AudioService.seekTo(bookProvider.currentBook.checkpoint.value);
+    } else {
+      if (bookProvider.isBundle && bookProvider.currentBook != bookProvider.elements.last) {
+        bookProvider.changeIndex(bookProvider.bookIndex+1);
+        await AudioService.seekTo(bookProvider.currentBook.checkpoint.value);
+      } else {
+        await AudioService.seekTo(Duration(seconds: 0));
+      }
+    }
+    if (position == null) {
+      streamPosition();
+    }
+  }
+
+  static Future<void> playPause(BookProvider bookProvider) async {
+    if (AudioService.running){
+      if(AudioService.playbackState.playing && AudioController._currentBookProvider?.currentBook.path == bookProvider.currentBook.path){
+        AudioService.pause();
+      } else {
+        if (AudioController._currentBookProvider?.currentBook.path != bookProvider.currentBook.path) {
+          await AudioService.stop();
+          await _start(bookProvider);
+        } else {
+          AudioService.play();
+        }
+      }
+    } else {
+      await _start(bookProvider);
+    }
+  }
+
+  static Future<void> seekTo(BookProvider bookProvider, Duration position) async {
+    bookProvider.currentBook.setCheckpoint(position);
+    print(position);
+    if (AudioService.running) {
+      AudioService.seekTo(position);
+    }
+  }
+
+  static Future<void> forwardRewind(BookProvider bookProvider, {bool isRewind = false}) async {
+    if (isRewind) {
+      if (AudioService.running) {
+        await AudioService.rewind();
+      } else {
+        bookProvider.currentBook.setCheckpoint(bookProvider.currentBook.checkpoint.value - Settings.rewind);
+      }
+    } else {
+      if (AudioService.running) {
+        await AudioService.fastForward();
+      } else {
+        bookProvider.currentBook.setCheckpoint(bookProvider.currentBook.checkpoint.value + Settings.rewind);
+      }
+    }
+  }
+
+  static Future<void> nextPrevious(BookProvider bookProvider, {bool isPrevious = false}) async {
+    Chapter? currentChapter = bookProvider.currentBook.currentChapter;
+    List<Chapter> chapters = bookProvider.currentBook.chapters;
+    if (isPrevious) {
+      if (chapters.isNotEmpty) {
+        if (chapters.indexOf(currentChapter!) != 0) {
+          Duration previousChapterStart = chapters[chapters.indexOf(currentChapter)-1].start;
+          seekTo(bookProvider, previousChapterStart);
+        } else {
+          seekTo(bookProvider, currentChapter.start);
+        }
+      } else {
+        seekTo(bookProvider, Duration.zero);
+      }
+    } else {
+      if (chapters.isNotEmpty) {
+        if (chapters.indexOf(currentChapter!) != chapters.length - 1) {
+          Duration nextChapterStart = chapters[chapters.indexOf(currentChapter)+1].start + Duration(seconds: 1);
+          seekTo(bookProvider, nextChapterStart);
+        } else {
+          seekTo(bookProvider, currentChapter.end);
+        }
+      } else {
+        seekTo(bookProvider, bookProvider.currentBook.length);
+      }
+    }
+  }
 }
 
 class MyAudioPlayerTask extends BackgroundAudioTask {
   static AudioPlayer player = AudioPlayer();
+
   @override
   Future<void> onStart(Map<String, dynamic>? params) async {
-    if (forceStopTimer != null){
-      forceStopTimer!.cancel();
+    if (AudioController.forceStopTimer != null){
+      AudioController.forceStopTimer!.cancel();
     }
     AudioServiceBackground.setState(
         controls: [MediaControl.rewind, MediaControl.pause, MediaControl.fastForward],
         playing: true,
         processingState: AudioProcessingState.connecting
     );
-    await player.setUrl(params!['path']);
+    if (!params!['isBundle']){
+      await player.setUrl(params['elements'][0]['path']);
+      MediaItem item = MediaItem(
+          id: params['elements'][0]['path'],
+          title: params['elements'][0]['title'],
+          album: params['elements'][0]['author'],
+          artUri: Uri.file(params['cover'])
+      );
+      await AudioServiceBackground.setMediaItem(item);
+    }
     player.play();
-    MediaItem item = MediaItem(id: params['path'], album: params['author'], title: params['title'], artUri: Uri.file(params['cover']));
-    await AudioServiceBackground.setMediaItem(item);
     AudioServiceBackground.setState(
         controls: [MediaControl.rewind, MediaControl.pause, MediaControl.fastForward],
         playing: true,
         processingState: AudioProcessingState.ready
     );
-    forceStopTimer = Timer(fastForwardInterval, () {
+    AudioController.forceStopTimer = Timer(fastForwardInterval, () {
       AudioService.pause();
     });
   }
@@ -131,8 +179,8 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<void> onPlay() {
-    if (forceStopTimer != null) {
-      forceStopTimer!.cancel();
+    if (AudioController.forceStopTimer != null) {
+      AudioController.forceStopTimer!.cancel();
     }
     player.play();
     AudioServiceBackground.setState(
@@ -140,7 +188,7 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
         playing: true,
         processingState: AudioProcessingState.ready
     );
-    forceStopTimer = Timer(fastForwardInterval, () {
+    AudioController.forceStopTimer = Timer(fastForwardInterval, () {
       AudioService.pause();
     });
     return super.onPlay();
@@ -159,388 +207,217 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
 
   @override
   Future<void> onSeekTo(Duration position) async {
-    await player.seek(position);
+    player.seek(position);
+    AudioServiceBackground.setState(position: position);
   }
 
   @override
   Future<void> onRewind() async {
-    await player.seek(player.position - rewindInterval);
+    Duration _position = player.position - rewindInterval;
+    player.seek(_position);
+    AudioServiceBackground.setState(position: _position);
   }
 
   @override
   Future<void> onFastForward() async {
-    await player.seek(player.position + rewindInterval);
+    Duration _position = player.position + rewindInterval;
+    player.seek(_position);
+    AudioServiceBackground.setState(position: _position);
   }
 
   @override
-  Future onCustomAction(String name, arguments) async {
-    switch(name) {
-      case 'pposition':
-        return player.position.inSeconds;
-    }
-    return super.onCustomAction(name, arguments);
+  Future<void> onAddQueueItem(MediaItem mediaItem) {
+    return super.onAddQueueItem(mediaItem);
   }
 }
 
-Widget _timelineControlButton(IconData icon, Function function) {
+Widget _timelineControlButton(BuildContext context, IconData icon, Function function) {
   return Material(
     color: Colors.transparent,
     child: InkWell(
       customBorder: CircleBorder(),
       onTap: () {
-        bookPageContextMenu.value = Container();
+        if (bookPageContextMenu.value.runtimeType == ContextMenu) {
+          bookPageContextMenu.value = Container();
+        }
         function();
       },
-      child: Icon(icon, color: Settings.colors[3], size: 42),
+      child: Icon(icon, color: Settings.colors[3], size: MediaQuery.of(context).size.height * 0.06),
     ),
   );
 }
 
-class HomePageTimeline extends StatefulWidget {
-  final Book book;
-  const HomePageTimeline({required this.book});
+class AudioProgressBar extends StatefulWidget {
+  final BookProvider bookProvider;
+  final bool isBookPage;
+  const AudioProgressBar({required this.bookProvider, this.isBookPage = false});
 
   @override
-  _HomePageTimelineState createState() => _HomePageTimelineState();
+  _AudioProgressBarState createState() => _AudioProgressBarState();
 }
 
-class _HomePageTimelineState extends State<HomePageTimeline> {
-  @override
-  Widget build(BuildContext context) {
-    double _width = MediaQuery.of(context).size.width * 0.9;
-    return StreamBuilder<Duration>(
-        stream: AudioService.positionStream,
-        builder: (context, snapshot) {
-          Duration _position = widget.book.checkpoint.value;
-          if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path && AudioService.running){
-            AudioService.customAction('pposition').then((value) {
-              if (value != null) {
-                _position = Duration(seconds: value);
-                widget.book.checkpoint.value = _position;
-                if (_position >= widget.book.length){
-                  AudioService.seekTo(widget.book.length);
-                  widget.book.status = 'read';
-                  widget.book.update();
-                  AudioService.stop();
-                }
-              }
-            });
-            widget.book.update();
-          }
-          return Column(
-            children: [
-              SizedBox
-                (
-                height: 20,
-                child: Stack(
-                  overflow: Overflow.visible,
-                  children: [
-                    SizedBox(
-                      width: _width,
-                      child: CustomPaint(
-                        foregroundPainter: TimelinePainter(Settings.colors[5], _width),
-                      ),
-                    ),
-                    SizedBox(
-                      width: _width,
-                      child: CustomPaint(
-                        foregroundPainter: TimelinePainter(Settings.colors[6], (_position.inSeconds * _width) / widget.book.length.inSeconds),
-                      ),
-                    ),
-                    Positioned(
-                      left: (_position.inSeconds * _width) / widget.book.length.inSeconds - 25,
-                      width: 50,
-                      height: 50,
-                      child: Container(
-                        color: Colors.transparent,
-                        child: CustomPaint(
-                          size: Size(50, 20),
-                          foregroundPainter: TimelinePositionCirclePainter(25),
-                        ),
-                      ),
-                    )
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: _width,
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _timelineControlButton(Icons.skip_previous_outlined, () {
-                        setState(() {
-                          nextPreviousChapter(widget.book);
-                        });
-                      }),
-                      _timelineControlButton(Icons.fast_rewind_outlined, () {
-                        if (widget.book.id != -1) {
-                          setState(() {
-                            forwardRewind(widget.book, forward: false);
-                          });
-                        }
-                      }),
-                      widget.book.id != -1 ? StreamBuilder<PlaybackState>(
-                          stream: AudioService.playbackStateStream,
-                          builder: (context, snapshot) {
-                            IconData icon = Icons.play_arrow;
-                            if (snapshot.hasData) {
-                              if (snapshot.data!.playing && playerUrl == widget.book.path) {
-                                icon = Icons.pause;
-                              }
-                            }
-                            return _timelineControlButton(icon, () {
-                              playBook(widget.book);
-                            });
-                          }
-                      ) : _timelineControlButton(Icons.play_arrow, () {}),
-                      _timelineControlButton(Icons.fast_forward_outlined, () {
-                        if (widget.book.id != -1) {
-                          setState(() {
-                            forwardRewind(widget.book, forward: true);
-                          });
-                        }
-                      }),
-                      _timelineControlButton(Icons.skip_next_outlined, () {
-                        setState(() {
-                          nextPreviousChapter(widget.book, next: true);
-                        });
-                      })
-                    ]
-                ),
-              ),
-            ]);
-        });
-  }
-}
+class _AudioProgressBarState extends State<AudioProgressBar> {
 
-
-class BookPageTimeline extends StatefulWidget {
-  final Book book;
-  BookPageTimeline({required this.book});
-
-  @override
-  _BookPageTimelineState createState() => _BookPageTimelineState();
-}
-
-class _BookPageTimelineState extends State<BookPageTimeline> {
-  double buttonsTopPadding = 0.025;
-  double buttonsHeight = 0.075;
+  late double buttonsTopPadding;
+  late double buttonsHeight;
   double buttonsOpacity = 1;
 
   @override
+  void initState() {
+    buttonsTopPadding = 0.005;
+    buttonsHeight = 0.075;
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    double _width = MediaQuery.of(context).size.width * 0.8;
-    return Container(
-      width: _width,
-      child: StreamBuilder<Duration>(
-          stream: AudioService.positionStream,
-          builder: (context, snapshot) {
-            Duration _position = widget.book.checkpoint.value;
-            if (snapshot.hasData && AudioService.playbackState.playing && playerUrl == widget.book.path && AudioService.running){
-              AudioService.customAction('pposition').then((value) {
-                if (value != null) {
-                  _position = Duration(seconds: value);
-                  widget.book.checkpoint.value = _position;
-                  if (_position >= widget.book.length){
-                    AudioService.seekTo(widget.book.length);
-                    widget.book.status = 'read';
-                    widget.book.update();
-                    AudioService.stop();
-                  }
-                }
-              });
-              widget.book.update();
-            }
-            return Column(
+    double _width = widget.isBookPage ? MediaQuery.of(context).size.width * 0.8 : MediaQuery.of(context).size.width * 0.9;
+    return ValueListenableBuilder<Duration>(
+      valueListenable: widget.bookProvider.currentBook.checkpoint,
+      builder: ((context, value, _) {
+        Duration _position = value;
+        return SizedBox(
+          width: _width,
+          child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        convertDuration(_position),
-                        style: TextStyle(
-                            color: Settings.colors[4], fontFamily: 'Poppins'),
-                      ),
-                      Text(
-                        convertDuration(widget.book.length),
-                        style: TextStyle(
-                            color: Settings.colors[4], fontFamily: 'Poppins'
+                if (widget.isBookPage)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          convertDuration(_position),
+                          style: TextStyle(color: Settings.colors[4], fontFamily: 'Poppins'),
                         ),
-                      )
-                    ],
-                  ),
-                ),
-                Container(
-                  height: 20,
-                  child: Stack(
-                    overflow: Overflow.visible,
-                    children: [
-                      Container(
-                        width: _width,
-                        child: CustomPaint(
-                          foregroundPainter: TimelinePainter(Settings.colors[5], _width),
-                        ),
-                      ),
-                      Container(
-                        width: _width,
-                        child: CustomPaint(
-                          foregroundPainter: TimelinePainter(Settings.colors[6], (_position.inSeconds * _width) / widget.book.length.inSeconds),
-                        ),
-                      ),
-                      Positioned(
-                        left: (_position.inSeconds * _width) / widget.book.length.inSeconds - 25,
-                        width: 50,
-                        height: 50,
-                        child: GestureDetector(
-                          onPanUpdate: (details) {
-                            if (!bookPageIsLocked.value){
-                              setState(() {
-                                widget.book.checkpoint.value = Duration(seconds: ((details.globalPosition.dx / MediaQuery.of(context).size.width) * widget.book.length.inSeconds).round());
-                              });
-                              if (AudioService.running) {
-                                AudioService.seekTo(widget.book.checkpoint.value).whenComplete(() => setState(() {}));
-                              }
-                            }
-                          },
-                          onPanEnd: (details) {
-                            widget.book.update();
-                          },
-                          child: Container(
-                            color: Colors.transparent,
-                            child: CustomPaint(
-                              size: Size(50, 20),
-                              foregroundPainter: TimelinePositionCirclePainter(25),
-                            ),
+                        Text(
+                          convertDuration(widget.bookProvider.currentBook.length),
+                          style: TextStyle(
+                              color: Settings.colors[4], fontFamily: 'Poppins'
                           ),
-                        ),
-                      )
-                    ],
+                        )
+                      ],
+                    ),
                   ),
+                ValueListenableBuilder<bool>(
+                    valueListenable: bookPageIsLocked,
+                    builder: (context, value, _) {
+                      bool isDraggable;
+                      if (widget.bookProvider == BookProvider.nullBookProvider) {
+                        isDraggable = false;
+                      } else {
+                        if (widget.isBookPage) {
+                          isDraggable = value ? false : true;
+                        } else {
+                          isDraggable = false;
+                        }
+                      }
+                      return SizedBox(
+                          height: MediaQuery.of(context).size.height * (widget.isBookPage ? 0.025 : 0.02),
+                          child: ProgressBar(
+                            progress: _position,
+                            total: widget.bookProvider.currentBook.length,
+                            isDraggable: isDraggable,
+                            thumbValue: (_position.inSeconds * 100 / widget.bookProvider.currentBook.length.inSeconds) / 100,
+                            barHeight: 2.5,
+                            timeLabelLocation: TimeLabelLocation.none,
+                            progressBarColor: Settings.colors[6],
+                            baseBarColor: Settings.colors[5],
+                            thumbColor: Settings.colors[6],
+                            thumbGlowColor: Settings.colors[6].withOpacity(0.3),
+                            thumbGlowRadius: MediaQuery.of(context).size.height * 0.0125,
+                            thumbRadius: MediaQuery.of(context).size.height * 0.01,
+                            onSeek: (position) {
+                              AudioController.seekTo(widget.bookProvider, position);
+                              },
+                          )
+                        );
+                    }
                 ),
                 ValueListenableBuilder<bool>(
                     valueListenable: bookPageIsLocked,
                     builder: (context, value, _) {
-                      if (value) {
-                        buttonsTopPadding = 0;
-                        buttonsHeight = 0;
-                        buttonsOpacity = 0;
-                      } else {
-                        buttonsTopPadding = 0.005;
-                        buttonsHeight = 0.075;
-                        buttonsOpacity = 1;
+                      if (widget.isBookPage){
+                        if (value) {
+                          buttonsTopPadding = 0;
+                          buttonsHeight = 0;
+                          buttonsOpacity = 0;
+                        } else {
+                          buttonsTopPadding = 0.005;
+                          buttonsHeight = 0.075;
+                          buttonsOpacity = 1;
+                        }
                       }
                       return AnimatedContainer(
+                        duration: bookPageIsLocked.value ? Duration(milliseconds: 500) : Duration(milliseconds: 250),
                         height: MediaQuery.of(context).size.height * buttonsHeight,
-                        padding: EdgeInsets.only(
-                            top: MediaQuery.of(context).size.height * buttonsTopPadding),
-                        duration: Duration(milliseconds: 500),
+                        padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * buttonsTopPadding),
+                        width: _width,
                         child: AnimatedOpacity(
                           opacity: buttonsOpacity,
-                          duration: Duration(milliseconds: 500),
+                          duration: bookPageIsLocked.value ? Duration(milliseconds: 250) : Duration(milliseconds: 500),
                           child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                !value
-                                    ? _timelineControlButton(
-                                    Icons.skip_previous_outlined, () {
+                                _timelineControlButton(context, Icons.skip_previous_outlined, () {
                                   setState(() {
-                                    nextPreviousChapter(widget.book);
+                                    AudioController.nextPrevious(widget.bookProvider, isPrevious: true);
                                   });
-                                })
-                                    : Container(),
-                                !value
-                                    ? _timelineControlButton(
-                                    Icons.fast_rewind_outlined, () {
-                                  setState(() {
-                                    forwardRewind(widget.book, forward: false);
-                                  });
-                                })
-                                    : Container(),
-                                !value
-                                    ? StreamBuilder<PlaybackState>(
+                                }),
+                                _timelineControlButton(context, Icons.fast_rewind_outlined, () {
+                                  if (widget.bookProvider.id != -1) {
+                                    setState(() {
+                                      AudioController.forwardRewind(widget.bookProvider, isRewind: true);
+                                    });
+                                  }
+                                }),
+                                widget.bookProvider.id != -1 ? StreamBuilder<PlaybackState>(
                                     stream: AudioService.playbackStateStream,
                                     builder: (context, snapshot) {
                                       IconData icon = Icons.play_arrow;
                                       if (snapshot.hasData) {
-                                        if (snapshot.data!.playing && playerUrl == widget.book.path) {
+                                        if (snapshot.data!.playing && AudioController._currentBookProvider?.currentBook.path == widget.bookProvider.currentBook.path) {
                                           icon = Icons.pause;
                                         }
                                       }
-                                      return _timelineControlButton(icon, () {
-                                        playBook(widget.book);
+                                      return _timelineControlButton(context, icon, () {
+                                        AudioController.playPause(widget.bookProvider);
                                       });
-                                    })
-                                    : Container(),
-                                !value
-                                    ? _timelineControlButton(
-                                    Icons.fast_forward_outlined, () {
+                                    }
+                                ) : _timelineControlButton(
+                                    context, Icons.play_arrow, () {}
+                                ),
+                                _timelineControlButton(
+                                    context, Icons.fast_forward_outlined, () async {
+                                  if (widget.bookProvider.id != -1) {
+                                    setState((){
+                                      if (AudioService.running) {
+                                        AudioController.forwardRewind(widget.bookProvider);
+                                      } else {
+                                        widget.bookProvider.currentBook.setCheckpoint(widget.bookProvider.currentBook.checkpoint.value+Settings.rewind);
+                                        if (widget.bookProvider.currentBook.checkpoint.value > widget.bookProvider.currentBook.length) {
+                                          widget.bookProvider.currentBook.setCheckpoint(widget.bookProvider.currentBook.length);
+                                        }
+                                      }
+                                    });
+                                  }
+                                }),
+                                _timelineControlButton(context, Icons.skip_next_outlined, () {
                                   setState(() {
-                                    forwardRewind(widget.book, forward: true);
+                                    AudioController.nextPrevious(widget.bookProvider);
                                   });
                                 })
-                                    : Container(),
-                                !value
-                                    ? _timelineControlButton(
-                                    Icons.skip_next_outlined, () {
-                                  setState(() {
-                                    nextPreviousChapter(widget.book, next: true);
-                                  });
-                                })
-                                    : Container(),
-                              ]),
-                        ),
+                              ]
+                          )
+                        )
                       );
-                    })
-              ],
-            );
-          }
-      ),
-    );
-  }
-}
-
-class TimelinePainter extends CustomPainter {
-  late Color color;
-  late double x;
-
-  TimelinePainter(Color ccolor, double cx) {
-    color = ccolor;
-    x = cx;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.5;
-    canvas.drawLine(Offset(0, 10), Offset(x, 10), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
-}
-
-class TimelinePositionCirclePainter extends CustomPainter {
-  late double x;
-
-  TimelinePositionCirclePainter(double arg) {
-    x = arg;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Settings.colors[6];
-    canvas.drawCircle(Offset(x, 10), 5.5, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
-  }
+                    }
+                )
+              ]),
+        );
+        })
+      );
+    }
 }
 
 String convertDuration(Duration duration) {

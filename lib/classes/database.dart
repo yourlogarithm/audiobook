@@ -1,5 +1,4 @@
 import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/bookmark.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:io';
@@ -25,47 +24,40 @@ class DatabaseProvider {
         version: 4,
         onCreate: (Database db, int version) async {
           await db.execute(
-              'CREATE TABLE books('
+              'CREATE TABLE bookProviders('
                   'id INTEGER PRIMARY KEY, '
-                  'title TEXT, author TEXT, '
-                  'path TEXT, length INTEGER, '
-                  'defaultCover INTEGER, cover TEXT, '
-                  'checkpoint INTEGER, '
-                  'status STRING,'
-                  'chapters BLOB'
-                  ')'
-          );
-          await db.execute(
-              'CREATE TABLE bookmarks('
-                  'id INTEGER PRIMARY KEY, '
-                  'bookTitle TEXT, '
+                  'parentPath TEXT, '
                   'title TEXT, '
-                  'time INTEGER'
-                  ')'
+                  'author TEXT, '
+                  'cover TEXT, '
+                  'status STRING, '
+                  'isBundle INTEGER, '
+                  'elements BLOB, '
+                  'bookIndex INTEGER'
+              ')'
           );
         }
     );
   }
 
-  static Future<List<Book>> getBooks() async {
+  static Future<List<BookProvider>> get getBookProviders async {
     Database db = await getDatabase;
-    List<Map<String, dynamic>> maps = await db.query('books');
-    _checkImage() async {
+    List<Map<String, dynamic>> maps = await db.query('bookProviders');
+    _check() async {
       List<Map<String, dynamic>> ready = [];
       for (int i = 0; i < maps.length; i++){
         Map<String, dynamic> newMap = {};
         maps[i].forEach((key, value) {
           newMap[key] = value;
         });
-        if (await File(newMap['path']).exists()){
+        if (await File(newMap['parentPath']).exists() || await Directory(newMap['parentPath']).exists()){
           bool edited = false;
-          if (maps[i]['defaultCover'] == 0){
+          if (maps[i]['cover'] == Settings.defaultCover){
             if (!await File(maps[i]['cover']).exists()){
               edited = true;
-              newMap['defaultCover'] = 1;
-              newMap['cover'] = '${Settings.dir.path}/defaultcover.png';
+              newMap['cover'] = Settings.defaultCover;
               await db.update(
-                  'books',
+                  'bookProviders',
                   newMap,
                   where: 'id = ?',
                   whereArgs: [newMap['id']]
@@ -73,13 +65,12 @@ class DatabaseProvider {
             }
           }
           if (!edited) {
-            newMap['defaultCover'] = maps[i]['defaultCover'];
             newMap['cover'] = maps[i]['cover'];
           }
           ready.add(newMap);
         } else {
           await db.delete(
-              'books',
+              'bookProviders',
               where: 'id = ?',
               whereArgs: [newMap['id']]
           );
@@ -87,20 +78,10 @@ class DatabaseProvider {
       }
       return ready;
     }
-    List<Map<String, dynamic>> edited = await _checkImage();
+    List<Map<String, dynamic>> edited = await _check();
     return List.generate(edited.length, (index) {
-      return Book.fromMap(edited[index]);
+      return BookProvider.fromMap(edited[index]);
     });
-  }
-
-  static Future<List<Bookmark>> getBookmarks(String bookTitle) async {
-    Database db = await getDatabase;
-    List<Map<String, dynamic>> maps = await db.query(
-        'bookmarks',
-        where: 'bookTitle = ?',
-        whereArgs: [bookTitle]
-    );
-    return List.generate(maps.length, (index) => Bookmark.fromMap(maps[index]));
   }
 
 }

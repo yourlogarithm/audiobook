@@ -1,4 +1,5 @@
 import 'package:audiobook/classes/book.dart';
+import 'package:audiobook/loading.dart';
 import 'package:audiobook/pages/AddBookPage.dart';
 import 'package:audiobook/pages/BookPage.dart';
 import 'package:audiobook/pages/ChangeCoverPage.dart';
@@ -8,16 +9,20 @@ import 'package:flutter/material.dart';
 import 'classes/settings.dart';
 import 'pages/MainPage.dart';
 
+bool moveBlocked = false;
+
 void moveHome() {
-  if (bottomBarIndex.value == -1) {
-    Content.contentNavigatorKey.currentState!.pushReplacementNamed('/');
-    if (bookPageContextMenu.value.runtimeType != Container){
-      bookPageContextMenu.value = Container();
+  if (!moveBlocked) {
+    if (bottomBarIndex.value == -1) {
+      Content.contentNavigatorKey.currentState!.pushReplacementNamed('/');
+      if (bookPageContextMenu.value.runtimeType != Container){
+        bookPageContextMenu.value = Container();
+      }
+    } else {
+      mainPageController.animateToPage(1, duration: Duration(milliseconds: 300), curve: Curves.fastOutSlowIn);
     }
-  } else {
-    mainPageController.animateToPage(1, duration: Duration(milliseconds: 300), curve: Curves.fastOutSlowIn);
+    bottomBarIndex.value = 1;
   }
-  bottomBarIndex.value = 1;
 }
 
 class Content extends StatefulWidget {
@@ -56,8 +61,8 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
                       builder = MainPage();
                       break;
                     case '/bookPage':
-                      Book book = settings.arguments as Book;
-                      builder = BookPage(book: book);
+                      BookProvider bookProvider = settings.arguments as BookProvider;
+                      builder = BookPage(bookProvider: bookProvider);
                       bottomBarIndex.value = -1;
                       break;
                     case '/addBook':
@@ -65,8 +70,12 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
                       bottomBarIndex.value = -1;
                       break;
                     case '/changeCover':
-                      Book book = settings.arguments as Book;
-                      builder = ChangeCoverPage(book: book);
+                      BookProvider bookProvider = settings.arguments as BookProvider;
+                      builder = ChangeCoverPage(bookProvider: bookProvider);
+                      bottomBarIndex.value = -1;
+                      break;
+                    case '/loading':
+                      builder = Loading(isFirst: false);
                       bottomBarIndex.value = -1;
                       break;
                     default:

@@ -1,16 +1,16 @@
 import 'dart:io';
-
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/explorer.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 
 class ChangeCoverPage extends StatefulWidget {
-  final Book book;
+  final BookProvider bookProvider;
 
-  const ChangeCoverPage({required this.book});
+  const ChangeCoverPage({required this.bookProvider});
 
   @override
   _ChangeCoverPageState createState() => _ChangeCoverPageState();
@@ -24,76 +24,77 @@ class _ChangeCoverPageState extends State<ChangeCoverPage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    explorer = FileExplorerImage(widget.book);
+    explorer = FileExplorerImage(widget.bookProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-            padding: EdgeInsets.symmetric(horizontal: 25),
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height * 0.10,
-            color: Settings.colors[2],
-            child: SafeArea(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add image',
-                    style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 20,
-                        color: Colors.white
+    return Container(
+      color: Settings.theme.value == 'Dark' ? Settings.colors[2] : Settings.colors[1],
+      child: Column(
+        children: [
+          Container(
+              padding: EdgeInsets.symmetric(horizontal: 25),
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height * 0.10,
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Add image',
+                      style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 20,
+                          color: Settings.colors[3]
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            )
-        ),
-        Container(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height * 0.9,
-          color: Settings.colors[2],
-          child: Container(
-              decoration: BoxDecoration(
-                  color: Settings.colors[0],
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-                  boxShadow: [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.1), offset: Offset(0, -3), blurRadius: 5, spreadRadius: 1)]
-              ),
-              child: ValueListenableBuilder(
-                  valueListenable: explorer.path,
-                  builder: (BuildContext context, value, _) {
-                    return FutureBuilder(
-                        future: explorer.directories(),
-                        builder: (context, AsyncSnapshot<Widget> snapshot) {
-                          if (snapshot.hasData) {
-                            return snapshot.data!;
-                          } else {
-                            return Container();
-                          }
-                        }
-                    );
-                  }
+                  ],
+                ),
               )
           ),
-        )
-      ],
+          Container(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height * 0.9,
+            child: Container(
+                decoration: BoxDecoration(
+                    color: Settings.colors[0],
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+                    boxShadow: [BoxShadow(color: Color.fromRGBO(0, 0, 0, 0.1), offset: Offset(0, -3), blurRadius: 5, spreadRadius: 1)]
+                ),
+                child: ValueListenableBuilder(
+                    valueListenable: explorer.path,
+                    builder: (BuildContext context, value, _) {
+                      return FutureBuilder(
+                          future: explorer.directories(),
+                          builder: (context, AsyncSnapshot<Widget> snapshot) {
+                            if (snapshot.hasData) {
+                              return snapshot.data!;
+                            } else {
+                              return Container();
+                            }
+                          }
+                      );
+                    }
+                )
+            ),
+          )
+        ],
+      ),
     );
   }
 }
 
 class FileExplorerImage extends FileExplorer {
-  late Book book;
+  late BookProvider bookProvider;
 
-  FileExplorerImage(Book ab) {
-    book = ab;
+  FileExplorerImage(BookProvider ab) {
+    bookProvider = ab;
   }
 
-  void selectFile(Book book, File file) async {
-    book.changeCover(file).whenComplete(() => moveHome());
+  void selectFile(BookProvider bookProvider, File file) async {
+    bookProvider.changeCover(file.path).whenComplete(() => moveHome());
   }
 
   Future<Widget> directories() async {
@@ -140,7 +141,7 @@ class FileExplorerImage extends FileExplorer {
                           child: InkWell(
                               onTap: () => _extension == ''
                                   ? this.navigateToDir(_path)
-                                  : selectFile(book, File(_path)),
+                                  : selectFile(bookProvider, File(_path)),
                               borderRadius: BorderRadius.circular(20),
                               child: _extension == ''
                                   ? Icon(
@@ -152,14 +153,16 @@ class FileExplorerImage extends FileExplorer {
                                           : Settings.colors[0],
                                       size: 40)
                                   : Center(
-                                      child: Text(
+                                      child: AutoSizeText(
                                       _extension,
+                                      maxLines: 1,
                                       style: TextStyle(
                                           fontFamily: 'Open Sans',
                                           fontWeight: FontWeight.bold,
                                           color: Settings.theme.value == 'Dark'
                                               ? Settings.colors[7]
-                                              : Settings.colors[0]),
+                                              : Settings.colors[0]
+                    ),
                                     ))),
                         ));
                   },
@@ -167,16 +170,17 @@ class FileExplorerImage extends FileExplorer {
             Expanded(
               flex: 1,
               child: Center(
-                  child: Text(
+                  child: AutoSizeText(
                 basename(_path) == '0' ? 'Internal Storage' : basename(_path),
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
+                maxLines: 1,
                 style: TextStyle(
                     fontFamily: 'Open Sans',
                     height: 1,
                     fontWeight: FontWeight.w600,
                     color: Settings.colors[3],
-                    fontSize: 12),
+                ),
               )),
             )
           ],

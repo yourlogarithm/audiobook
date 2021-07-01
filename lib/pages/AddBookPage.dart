@@ -4,14 +4,13 @@ import 'package:audiobook/classes/explorer.dart';
 import 'package:audiobook/classes/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';
-import 'package:audiotagger/models/audiofile.dart';
-import 'package:audiotagger/models/tag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ffmpeg/flutter_ffmpeg.dart';
 import 'dart:io';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as dpath;
 import 'package:audiotagger/audiotagger.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class AddBookPage extends StatefulWidget {
   // const AddBookPage({Key key}) : super(key: key);
@@ -44,57 +43,54 @@ class _AddBookPageState extends State<AddBookPage>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 25),
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height * 0.1,
-          color: Settings.theme.value == 'Dark'
-              ? Settings.colors[2]
-              : Settings.colors[1],
-          child: SafeArea(
-            child: TabBar(
-              controller: _tabController,
-              labelPadding: EdgeInsets.zero,
-              labelColor: Settings.colors[3],
-              labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 20),
-              indicator: UnderlineTabIndicator(
-                  borderSide: BorderSide(color: Settings.colors[3], width: 4)
-              ),
-              tabs: [Text('Default'), Text('File system')],
-            ),
-          ),
-        ),
-        Container(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height * 0.9,
-          color: Settings.theme.value == 'Dark'
-              ? Settings.colors[2]
-              : Settings.colors[1],
-          child: Container(
-            decoration: BoxDecoration(
-                color: Settings.colors[0],
-                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-                boxShadow: Settings.theme.value == 'Dark'
-                    ? [
-                        BoxShadow(
-                            color: Color.fromRGBO(0, 0, 0, 0.1),
-                            offset: Offset(0, -3),
-                            blurRadius: 5,
-                            spreadRadius: 1)
-                      ]
-                    : []),
-            child: ScrollConfiguration(
-              behavior: MyBehavior(),
-              child: TabBarView(
+    return Container(
+      color: Settings.theme.value == 'Dark' ? Settings.colors[2] : Settings.colors[1],
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 25),
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height * 0.1,
+            child: SafeArea(
+              child: TabBar(
                 controller: _tabController,
-                children: [WidgetExplorer(isDefault: true), WidgetExplorer()],
+                labelPadding: EdgeInsets.zero,
+                labelColor: Settings.colors[3],
+                labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 20),
+                indicator: UnderlineTabIndicator(
+                    borderSide: BorderSide(color: Settings.colors[3], width: 4)
+                ),
+                tabs: [Text('Default'), Text('File system')],
               ),
             ),
           ),
-        )
-      ],
+          Container(
+            width: MediaQuery.of(context).size.width,
+            height: MediaQuery.of(context).size.height * 0.9,
+            child: Container(
+              decoration: BoxDecoration(
+                  color: Settings.colors[0],
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+                  boxShadow: Settings.theme.value == 'Dark'
+                      ? [
+                          BoxShadow(
+                              color: Color.fromRGBO(0, 0, 0, 0.1),
+                              offset: Offset(0, -3),
+                              blurRadius: 5,
+                              spreadRadius: 1)
+                        ]
+                      : []),
+              child: ScrollConfiguration(
+                behavior: MyBehavior(),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [WidgetExplorer(isDefault: true), WidgetExplorer()],
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
     );
   }
 }
@@ -113,7 +109,7 @@ class _WidgetExplorerState extends State<WidgetExplorer> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    explorer = FileExplorerAudio(isDefault: widget.isDefault);
+    explorer = FileExplorerAudio(isDefault: widget.isDefault, context: context);
   }
 
   @override
@@ -136,24 +132,71 @@ class _WidgetExplorerState extends State<WidgetExplorer> {
 
 class FileExplorerAudio extends FileExplorer {
   late bool isDefault;
-
-  FileExplorerAudio({this.isDefault = false}) {
+  late BuildContext context;
+  FileExplorerAudio({this.isDefault = false, required this.context}) {
     if (isDefault) {
       this.path.value = Settings.defaultFolder;
     }
   }
 
-  void selectFile(File file) async {
-    Audiotagger tagger = Audiotagger();
-    Tag? tag = await tagger.readTags(path: file.path);
-    AudioFile? audioFile = await tagger.readAudioFile(path: file.path);
+  Future<void> buildBookProvider(File file, {bool isBundle = false}) async {
+    moveBlocked = true;
+    if (!isBundle) {
+      Book book = await selectFile(file);
+      BookProvider bookProvider = BookProvider(
+          id: allBooks.isNotEmpty ? allBooks.last.id + 1 : 1,
+          parentPath: file.path,
+          title: book.title,
+          author: book.author,
+          status: 'new',
+          isBundle: false,
+          elements: [book],
+          bookIndex: 0
+      );
+      await bookProvider.insert(context).whenComplete(() => moveHome());
+      moveBlocked = false;
+    } else {
+      List<FileSystemEntity> allFiles = await this.listDir(file.path);
+      List<Book> books = [];
+      for(int i = 0; i < allFiles.length; i++){
+        if (FileExplorer.audioFormats.contains(dpath.extension(allFiles[i].path))){
+          books.add(await selectFile(File(allFiles[i].path)));
+        }
+      }
+      if (books.isNotEmpty) {
+        bool sameAuthor = true;
+        for (int i = 0; i < books.length-1; i++){
+          if (books[i].author != books[i+1].author){
+            sameAuthor = false;
+          }
+        }
+        BookProvider bookProvider = BookProvider(
+            id: allBooks.isNotEmpty ? allBooks.last.id + 1 : 1,
+            parentPath: file.path,
+            title: dpath.basename(file.path),
+            author: sameAuthor ? books[0].author : 'Multiple authors',
+            status: 'new',
+            isBundle: true,
+            elements: books,
+            bookIndex: 0
+        );
+        await bookProvider.insert(context).whenComplete(() => moveHome());
+        moveBlocked = false;
+      }
+    }
+  }
+
+  Future<Book> selectFile(File file) async {
     List<FileSystemEntity> parent = await this.listDir(file.parent.path);
     List<Chapter> chapters = [];
     List? chaptersData;
+    int length = 1;
+    Map data = {};
     final FlutterFFprobe _flutterFFprobe = FlutterFFprobe();
-    await _flutterFFprobe.executeWithArguments(['-i', file.path, '-print_format', 'json', '-show_chapters']);
+    await _flutterFFprobe.executeWithArguments(['-loglevel', 'error', '-hide_banner', '-i', file.path, '-show_chapters']);
     await _flutterFFprobe.getMediaInformation(file.path).then((value)  {
-      Map data = value.getAllProperties();
+      data = value.getAllProperties();
+      length = int.parse(data['format']['duration'].split('.')[0]);
       chaptersData = data['chapters'];
       if (chaptersData != null){
         if (chaptersData!.isNotEmpty) {
@@ -171,72 +214,59 @@ class FileExplorerAudio extends FileExplorer {
         }
       }
     });
-    bool defaultCover = true;
     String? cover;
-    Uint8List? artwork = await tagger.readArtwork(path: file.path);
+    Uint8List? artwork = await Audiotagger().readArtwork(path: file.path);
     if (artwork != null) {
       Directory? extStorage = await getExternalStorageDirectory();
       if (extStorage != null) {
-        File imageFile = File(extStorage.path + '/' + basename(file.path));
+        File imageFile = File(extStorage.path + '/' + dpath.basename(file.path));
         if (!await imageFile.exists()) {
           imageFile.create(recursive: true);
         }
         imageFile.writeAsBytes(artwork);
-        defaultCover = false;
         cover = imageFile.path;
       }
     } else {
       parent.forEach((element) {
-        if (FileExplorer.imageFormats.contains(extension(element.path))) {
-          defaultCover = false;
+        if (FileExplorer.imageFormats.contains(dpath.extension(element.path))) {
           cover = element.path;
         }
       });
     }
     if (cover == null) {
-      defaultCover = true;
-      cover = Settings.dir.path + '/' + 'defaultCover.png';
+      cover = Settings.defaultCover;
     }
     Book book = Book(
-      id: books.isEmpty ? 1 : books.last.id + 1,
-      title: 'title',
-      author: 'author',
+      id: allBooks.isNotEmpty ? allBooks.last.id + 1 : 1,
+      title: dpath.basename(file.path),
+      author: 'No author',
       path: file.path,
-      length: Duration(seconds: audioFile!.length!),
-      defaultCover: defaultCover,
+      length: Duration(seconds: length),
       cover: cover!,
-      checkpoint: ValueNotifier(Duration(seconds: 0)),
-      status: 'new',
-      chapters: chapters
+      checkpoint: Duration(seconds: 0),
+      bookmarks: [],
+      chapters: chapters,
     );
-    bool titleEdited = false;
-    bool authorEdited = false;
-    if (tag != null) {
-      if (tag.title != null) {
-        if (tag.title!.isNotEmpty) {
-          book.title = tag.title!;
-          titleEdited = true;
+    if (data['format']['tags'] != null) {
+      if (data['format']['tags'].isNotEmpty) {
+        if (data['format']['tags']['title'] != null) {
+          if (data['format']['tags']['title'].isNotEmpty) {
+            book.changeTitle(data['format']['tags']['title']);
+          }
         }
       }
-      if (tag.artist != null) {
-        if (tag.artist!.isNotEmpty) {
-          book.author = tag.artist!;
-          authorEdited = true;
+      if (data['format']['tags']['artist'] != null) {
+        if (data['format']['tags']['artist'].isNotEmpty) {
+          book.changeAuthor(data['format']['tags']['artist']);
         }
       }
     }
-    if (!titleEdited) {
-      book.title = basename(file.path);
-    }
-    if (!authorEdited) {
-      book.author = 'No author';
-    }
-    await book.insert();
-    moveHome();
+    moveBlocked = false;
+    return book;
   }
 
   Future<Widget> directories() async {
-    List<FileSystemEntity> dirs = await this.listDir(this.path.value);
+    List<FileSystemEntity> dirs = await listDir(this.path.value);
     dirs.sort((a, b) => a.path.compareTo(b.path));
     if (!isDefault) {
       if (this.path.value != FileExplorer.rootPath) {
@@ -251,9 +281,8 @@ class FileExplorerAudio extends FileExplorer {
     List<Widget> folders = [];
     dirs.forEach((directory) {
       String _path = directory.path;
-      String _extension = extension(_path);
-      if (FileExplorer.audioFormats.contains(_extension) ||
-          (_extension == '' && Directory(_path).existsSync())) {
+      String _extension = dpath.extension(_path);
+      if (FileExplorer.audioFormats.contains(_extension) || (_extension == '' && Directory(_path).existsSync())) {
         folders.add(Column(
           children: [
             Expanded(
@@ -284,9 +313,74 @@ class FileExplorerAudio extends FileExplorer {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                              onTap: () => _extension == ''
-                                  ? this.navigateToDir(_path)
-                                  : selectFile(File(_path)),
+                              onTap: () => _extension == '' ? this.navigateToDir(_path) : buildBookProvider(File(_path)),
+                              onLongPress: () async {
+                                if (await Directory(_path).exists())
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                          backgroundColor: Settings.colors[0],
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(25)),
+                                          actionsPadding:
+                                              EdgeInsets.fromLTRB(0, 0, 20, 5),
+                                          contentPadding: EdgeInsets.fromLTRB(
+                                              24, 20, 24, 12),
+                                          title: AutoSizeText(
+                                            'Add the whole folder as an audio book?',
+                                            style: TextStyle(
+                                                color: Settings.colors[3],
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    0.045),
+                                          ),
+                                          actions: [
+                                            InkWell(
+                                              onTap: () =>
+                                                  Navigator.pop(context),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                                child: Text(
+                                                  'Cancel',
+                                                  style: TextStyle(
+                                                      color: Settings.colors[6],
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight:
+                                                          FontWeight.w600),
+                                                ),
+                                              ),
+                                            ),
+                                            InkWell(
+                                              onTap: () {
+                                                buildBookProvider(File(_path),
+                                                    isBundle: true);
+                                                Navigator.pop(context);
+                                              },
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.all(4),
+                                                child: Text(
+                                                  'Confirm',
+                                                  style: TextStyle(
+                                                      color: Settings.colors[6],
+                                                      fontFamily: 'Poppins',
+                                                      fontWeight:
+                                                          FontWeight.w600),
+                                                ),
+                                              ),
+                                            )
+                                          ],
+                                        ));
+                              },
                               borderRadius: BorderRadius.circular(20),
                               child: _extension == ''
                                   ? Icon(
@@ -298,8 +392,9 @@ class FileExplorerAudio extends FileExplorer {
                                           : Settings.colors[0],
                                       size: 40)
                                   : Center(
-                                      child: Text(
+                                      child: AutoSizeText(
                                       _extension,
+                                      maxLines: 1,
                                       style: TextStyle(
                                           fontFamily: 'Open Sans',
                                           fontWeight: FontWeight.bold,
@@ -313,16 +408,20 @@ class FileExplorerAudio extends FileExplorer {
             Expanded(
               flex: 1,
               child: Center(
-                  child: Text(
-                basename(_path) == '0' ? 'Internal Storage' : basename(_path),
+                  child: AutoSizeText(
+                dpath.basename(_path) == '0'
+                    ? 'Internal Storage'
+                    : dpath.basename(_path),
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                minFontSize: 12,
                 style: TextStyle(
-                    fontFamily: 'Open Sans',
-                    height: 1,
-                    fontWeight: FontWeight.w600,
-                    color: Settings.colors[3],
-                    fontSize: 12),
+                  fontFamily: 'Open Sans',
+                  height: 1,
+                  fontWeight: FontWeight.w600,
+                  color: Settings.colors[3],
+                ),
               )),
             )
           ],
@@ -340,3 +439,4 @@ class FileExplorerAudio extends FileExplorer {
     );
   }
 }
+
