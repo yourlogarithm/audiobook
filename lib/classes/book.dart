@@ -68,13 +68,32 @@ class BookProvider {
     _bookmarks = decodeBookmarks(map['bookmarks']);
   }
 
+  BookProvider.fromAudioTaskMap(Map<String, dynamic> map) {
+    _id = map['id'];
+    _parentPath = map['parentPath'];
+    _title = map['title'];
+    _author = map['author'];
+    _cover = map['cover'];
+    _status = map['status'];
+    _isBundle = map['isBundle'];
+    _elements = List.generate(map['elements'].length, (index) {
+      Map<String, dynamic> bookMap = {};
+      map['elements'][index].forEach((key, value) {
+        bookMap[key] = value;
+      });
+      return Book.fromAudioTaskMap(bookMap);
+    });
+    _bookIndex = ValueNotifier(map['bookIndex']);
+    _bookmarks = List.generate(map['bookmarks'].length, (index) => Bookmark.fromMap(map['bookmarks'][index]));
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'parentPath': _parentPath,
+      'parentPath': parentPath,
       'title': title,
       'author': author,
-      'cover': cover,
+      'cover': _cover != null ? cover : null,
       'status': status,
       'isBundle': isBundle ? 1 : 0,
       'elements': elementsEncoded,
@@ -86,16 +105,15 @@ class BookProvider {
   Map<String, dynamic> toAudioTaskMap() {
     return {
       'id': id,
-      'parentPath': _parentPath,
+      'parentPath': parentPath,
       'title': title,
       'author': author,
-      'cover': cover,
+      'cover': _cover != null ? cover : null,
       'status': status,
       'isBundle': isBundle,
       'bookIndex': bookIndex.value,
-      'elements': List.generate(elements.length, (index) => elements[index].toMap()),
+      'elements': List.generate(elements.length, (index) => elements[index].toAudioTaskMap()),
       'bookmarks': List.generate(bookmarks.length, (index) => bookmarks[index].toMap()),
-      'hasCover': hasCover
     };
   }
 
@@ -111,9 +129,10 @@ class BookProvider {
   late List<Bookmark> _bookmarks;
 
   int get id => _id;
+  String get parentPath => _parentPath;
   String get title => _title;
   String get author => _author;
-  bool get hasCover => _cover != null;
+  // bool get hasCover => _cover != null;
   String get cover {
     if (_cover != null) {
       return _cover!;
@@ -175,7 +194,6 @@ class BookProvider {
   bool compareTo(BookProvider bookProvider){
     bool same = false;
     if (title == bookProvider.title && isBundle == bookProvider.isBundle || _parentPath == bookProvider._parentPath) {
-      print(_parentPath);
       same = true;
     }
     return same;
@@ -268,6 +286,23 @@ class Book {
     _chapters = decodeChapters(map['chapters']);
   }
 
+  Book.fromAudioTaskMap(Map<String, dynamic> map){
+    _id = map['id'];
+    _title = map['title'];
+    _author = map['author'];
+    _path = map['path'];
+    _checkpoint = ValueNotifier(Duration(seconds: map['checkpoint']));
+    _length = Duration(seconds: map['length']);
+    _cover = map['cover'];
+    _chapters = List.generate(map['chapters'].length, (index) {
+      Map<String, dynamic> chapterMap = {};
+      map['chapters'][index].forEach((key, value) {
+        chapterMap[key] = value;
+      });
+      return Chapter.fromMap(chapterMap);
+    });
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': _id,
@@ -279,6 +314,14 @@ class Book {
       'cover': cover,
       'chapters': chaptersEncoded
     };
+  }
+
+  Map<String, dynamic> toAudioTaskMap() {
+    Map<String, dynamic> map = toMap();
+    map['chapters'] = List.generate(chapters.length, (i) {
+      return chapters[i].toMap();
+    });
+    return map;
   }
 
   late int _id;
@@ -301,6 +344,20 @@ class Book {
   dynamic get currentChapter {
     try {
       return chapters.firstWhere((element) => element.start <= checkpoint.value && element.end >= checkpoint.value);
+    } catch (e) {
+      return null;
+    }
+  }
+  dynamic get nextChapter {
+    try {
+      return chapters[chapters.indexOf(currentChapter)+1];
+    } catch (e) {
+      return null;
+    }
+  }
+  dynamic get previousChapter {
+    try {
+      return chapters[chapters.indexOf(currentChapter)-1];
     } catch (e) {
       return null;
     }

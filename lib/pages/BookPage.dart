@@ -22,10 +22,8 @@ class BookPage extends StatefulWidget {
 }
 
 class _BookPageState extends State<BookPage> {
-
   @override
   Widget build(BuildContext context) {
-    print(widget.bookProvider.bookIndex.value);
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: ValueListenableBuilder(
@@ -523,8 +521,6 @@ class _ContextMenuState extends State<ContextMenu> {
 
 
 class SleepTimerIcon extends StatefulWidget {
-  // const SleepTimerIcon({Key key}) : super(key: key);
-
   @override
   _SleepTimerIconState createState() => _SleepTimerIconState();
 }
@@ -562,7 +558,7 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
                 // AudioController.setSleep();
               },
               child: ValueListenableBuilder<bool>(
-                valueListenable: AudioController.sleep,
+                valueListenable: MyAudioPlayerTask.isSleepTimer,
                 builder: (context, value, _) {
                   if (value) {
                     _animationController.animateTo(100);

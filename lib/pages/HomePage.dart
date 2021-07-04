@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/widgets/progressBar.dart';
 import 'package:audiobook/widgets/bookFocusedMenu.dart';
-import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/widgets/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/content.dart';

@@ -51,6 +51,7 @@ class DatabaseProvider {
         maps[i].forEach((key, value) {
           newMap[key] = value;
         });
+
         if (await File(newMap['parentPath']).exists() || await Directory(newMap['parentPath']).exists()){
           bool edited = false;
           if (maps[i]['cover'] == Settings.defaultCover){

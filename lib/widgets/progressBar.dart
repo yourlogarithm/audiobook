@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:audiobook/classes/audioController.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/classes/settings.dart';
@@ -118,7 +119,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                               thumbGlowRadius: MediaQuery.of(context).size.height * 0.0125,
                               thumbRadius: MediaQuery.of(context).size.height * 0.01,
                               onSeek: (position) {
-                                AudioController.seekTo(widget.bookProvider, position);
+                                AudioController.seek(position, widget.bookProvider);
                               },
                             )
                         );
@@ -151,13 +152,13 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                                     children: [
                                       _timelineControlButton(context, Icons.skip_previous_outlined, () {
                                         setState(() {
-                                          AudioController.nextPrevious(widget.bookProvider, isPrevious: true);
+                                          AudioController.skipTo(widget.bookProvider, isPrevious: true);
                                         });
                                       }),
                                       _timelineControlButton(context, Icons.fast_rewind_outlined, () {
                                         if (widget.bookProvider.id != -1) {
                                           setState(() {
-                                            AudioController.forwardRewind(widget.bookProvider, isRewind: true);
+                                            AudioController.rewind(widget.bookProvider);
                                           });
                                         }
                                       }),
@@ -166,28 +167,27 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                                           builder: (context, snapshot) {
                                             IconData icon = Icons.play_arrow;
                                             if (snapshot.hasData) {
-                                              if (snapshot.data!.playing && AudioController.currentBookProvider?.currentBook.path == widget.bookProvider.currentBook.path) {
+                                              if (snapshot.data!.playing && widget.bookProvider.id == AudioService.currentMediaItem?.extras!['id']) {
                                                 icon = Icons.pause;
                                               }
                                             }
                                             return _timelineControlButton(context, icon, () {
-                                              AudioController.playPause(widget.bookProvider);
+                                              AudioController.play(widget.bookProvider);
                                             });
                                           }
-                                      ) : _timelineControlButton(
-                                          context, Icons.play_arrow, () {}
+                                      ) : _timelineControlButton(context, Icons.play_arrow, () {}
                                       ),
                                       _timelineControlButton(
                                           context, Icons.fast_forward_outlined, () async {
                                         if (widget.bookProvider.id != -1) {
                                           setState((){
-                                            AudioController.forwardRewind(widget.bookProvider);
+                                            AudioController.forward(widget.bookProvider);
                                           });
                                         }
                                       }),
                                       _timelineControlButton(context, Icons.skip_next_outlined, () {
                                         setState(() {
-                                          AudioController.nextPrevious(widget.bookProvider);
+                                          AudioController.skipTo(widget.bookProvider, isPrevious: false);
                                         });
                                       })
                                     ]
