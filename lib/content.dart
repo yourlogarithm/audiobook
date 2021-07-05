@@ -12,17 +12,15 @@ import 'pages/MainPage.dart';
 bool moveBlocked = false;
 
 void moveHome() {
-  if (!moveBlocked) {
-    if (bottomBarIndex.value == -1) {
-      Content.contentNavigatorKey.currentState!.pushReplacementNamed('/');
-      if (bookPageContextMenu.value.runtimeType != Container){
-        bookPageContextMenu.value = Container();
-      }
-    } else {
-      mainPageController.animateToPage(1, duration: Duration(milliseconds: 300), curve: Curves.fastOutSlowIn);
+  if (bottomBarIndex.value == -1) {
+    Content.contentNavigatorKey.currentState!.pushReplacementNamed('/');
+    if (bookPageContextMenu.value.runtimeType != Container){
+      bookPageContextMenu.value = Container();
     }
-    bottomBarIndex.value = 1;
+  } else {
+    mainPageController.animateToPage(1, duration: Duration(milliseconds: 300), curve: Curves.fastOutSlowIn);
   }
+  bottomBarIndex.value = 1;
 }
 
 class Content extends StatefulWidget {
@@ -44,7 +42,7 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
         ));
         return WillPopScope(
             onWillPop: () async {
-              if (bottomBarIndex.value != 1) {
+              if (bottomBarIndex.value != 1 && !moveBlocked) {
                 moveHome();
               }
               return false;
