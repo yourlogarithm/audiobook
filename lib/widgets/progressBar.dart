@@ -1,5 +1,5 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:audiobook/classes/audio_video_progress_bar.dart';
 import 'package:audiobook/classes/audioController.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/player.dart';
