@@ -188,11 +188,8 @@ class FileExplorerAudio extends FileExplorer {
       }
       moveBlocked = false;
     }
-    print('Working');
     showDialog(context: context, builder: (context) {
-      print('==========');
       _func().whenComplete(() => Navigator.pop(context));
-      print('==========');
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         backgroundColor: Settings.colors[0],
