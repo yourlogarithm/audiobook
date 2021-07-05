@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
+import 'package:audiobook/classes/audioController.dart';
 import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/widgets/scrollBehavior.dart';
@@ -532,6 +533,7 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
   late AnimationController _animationController;
   late Animation<Color?> _colorTween;
 
+
   @override
   void initState() {
     _animationController = AnimationController(vsync: this, duration: Duration(milliseconds: 300));
@@ -555,10 +557,10 @@ class _SleepTimerIconState extends State<SleepTimerIcon>
                 if (bookPageContextMenu.value.runtimeType == ContextMenu) {
                   bookPageContextMenu.value = Container();
                 }
-                // AudioController.setSleep();
+                AudioController.sleep();
               },
               child: ValueListenableBuilder<bool>(
-                valueListenable: MyAudioPlayerTask.isSleepTimer,
+                valueListenable: AudioController.isSetSleepTimer,
                 builder: (context, value, _) {
                   if (value) {
                     _animationController.animateTo(100);

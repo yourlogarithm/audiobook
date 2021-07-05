@@ -3,6 +3,7 @@ import 'package:audiobook/classes/book.dart';
 import 'package:audiobook/classes/player.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:audiobook/classes/settings.dart';
+import 'package:flutter/cupertino.dart';
 
 backgroundTaskEntrypoint() {
   AudioServiceBackground.run(() => MyAudioPlayerTask());
@@ -10,9 +11,34 @@ backgroundTaskEntrypoint() {
 
 class AudioController {
 
+  static ValueNotifier<bool> isSetSleepTimer = ValueNotifier(false);
+  static Timer? sleepTimer;
   static StreamSubscription<Duration>? positionSubscription;
 
   static bool skipping = false;
+
+  static void initSleep() {
+    isSetSleepTimer.value = true;
+    sleepTimer = Timer(Settings.sleep, () {
+      if (AudioService.running){
+        AudioService.stop();
+      }
+      isSetSleepTimer.value = false;
+    });
+  }
+
+  static void cancelSleep() {
+    isSetSleepTimer.value = false;
+    sleepTimer?.cancel();
+  }
+
+  static void sleep() {
+    if (isSetSleepTimer.value && sleepTimer != null){
+      cancelSleep();
+    } else {
+      initSleep();
+    }
+  }
 
   static void startListening(int id) async {
     positionSubscription = AudioService.positionStream.listen((event) {

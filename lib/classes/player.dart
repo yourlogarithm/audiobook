@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 class MyAudioPlayerTask extends BackgroundAudioTask {
   static AudioPlayer player = AudioPlayer();
   static Timer? forceStopTimer;
-  static Timer? sleepTimer;
-  static ValueNotifier<bool> isSleepTimer = ValueNotifier(false);
   static List<MediaItem>? _mediaItems;
   static int _bookIndex = 0;
 
@@ -149,25 +147,5 @@ class MyAudioPlayerTask extends BackgroundAudioTask {
       player.setUrl(_mediaItems![_bookIndex].id),
     ]);
     return super.onSkipToNext();
-  }
-
-  @override
-  Future onCustomAction(String name, arguments) {
-    switch (name) {
-      case 'activateSleepTimer':
-        sleepTimer?.cancel();
-        sleepTimer = Timer(arguments, () {
-          if (AudioService.playbackState.playing) {
-            AudioService.pause();
-          }
-        });
-        isSleepTimer.value = true;
-        break;
-      case 'deactivateSleepTimer':
-        sleepTimer?.cancel();
-        isSleepTimer.value = false;
-        break;
-    }
-    return super.onCustomAction(name, arguments);
   }
 }
