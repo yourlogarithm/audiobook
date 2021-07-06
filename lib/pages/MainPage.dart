@@ -55,80 +55,83 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ScrollConfiguration(
-          behavior: MyBehavior(),
-          child: PageView(
-            scrollDirection: Axis.horizontal,
-            controller: mainPageController,
-            onPageChanged: (index) {
-              bottomBarIndex.value = index;
-            },
-            children: [
-              LibraryPage(),
-              HomePage(),
-              SettingsPage()
-            ],
+    return Container(
+      color: Settings.colors[1],
+      child: Stack(
+        children: [
+          ScrollConfiguration(
+            behavior: MyBehavior(),
+            child: PageView(
+              scrollDirection: Axis.horizontal,
+              controller: mainPageController,
+              onPageChanged: (index) {
+                bottomBarIndex.value = index;
+              },
+              children: [
+                LibraryPage(),
+                HomePage(),
+                SettingsPage()
+              ],
+            ),
           ),
-        ),
-        Positioned(
-            bottom: 0,
-            child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                height: MediaQuery.of(context).size.height * 0.08,
-                width: MediaQuery.of(context).size.width,
-                color: Colors.transparent,
-                child: ValueListenableBuilder(
-                  valueListenable: bottomBarIndex,
-                  builder: (context, value, _) {
-                    return ValueListenableBuilder(
-                        valueListenable: Settings.theme,
-                        builder: (context, value, _) {
-                          return Row(
-                            mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                            children: [
-                              AnimatedContainer(
-                                width: bottomBarIndex.value == 0 ? MediaQuery.of(context).size.width * 0.3 : 54,
-                                decoration: bottomBarIndex.value == 0 ? BoxDecoration(
-                                    color: Settings.colors[6],
-                                    borderRadius:
-                                    BorderRadius.circular(25))
-                                    : BoxDecoration(),
-                                duration: Duration(milliseconds: 300),
-                                child: _item(0, Icons.menu, 'Library'),
-                              ),
-                              AnimatedContainer(
-                                width: bottomBarIndex.value == 1 ? MediaQuery.of(context).size.width * 0.3 : 54,
-                                decoration: bottomBarIndex.value == 1
-                                    ? BoxDecoration(
-                                    color: Settings.colors[6],
-                                    borderRadius:
-                                    BorderRadius.circular(25))
-                                    : BoxDecoration(),
-                                duration: Duration(milliseconds: 300),
-                                child: _item(1, Icons.home, 'Home'),
-                              ),
-                              AnimatedContainer(
-                                width: bottomBarIndex.value == 2 ? MediaQuery.of(context).size.width * 0.3 : 54,
-                                decoration: bottomBarIndex.value == 2
-                                    ? BoxDecoration(
-                                    color: Settings.colors[6],
-                                    borderRadius:
-                                    BorderRadius.circular(25))
-                                    : BoxDecoration(),
-                                duration: Duration(milliseconds: 300),
-                                child: _item(2, Icons.settings, 'Settings'),
-                              ),
-                            ],
-                          );
-                    });
-                  },
-                )
+          Positioned(
+              bottom: 0,
+              child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  height: MediaQuery.of(context).size.height * 0.08,
+                  width: MediaQuery.of(context).size.width,
+                  color: Colors.transparent,
+                  child: ValueListenableBuilder(
+                    valueListenable: bottomBarIndex,
+                    builder: (context, value, _) {
+                      return ValueListenableBuilder(
+                          valueListenable: Settings.theme,
+                          builder: (context, value, _) {
+                            return Row(
+                              mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
+                              children: [
+                                AnimatedContainer(
+                                  width: bottomBarIndex.value == 0 ? MediaQuery.of(context).size.width * 0.3 : 54,
+                                  decoration: bottomBarIndex.value == 0 ? BoxDecoration(
+                                      color: Settings.colors[6],
+                                      borderRadius:
+                                      BorderRadius.circular(25))
+                                      : BoxDecoration(),
+                                  duration: Duration(milliseconds: 300),
+                                  child: _item(0, Icons.menu, 'Library'),
+                                ),
+                                AnimatedContainer(
+                                  width: bottomBarIndex.value == 1 ? MediaQuery.of(context).size.width * 0.3 : 54,
+                                  decoration: bottomBarIndex.value == 1
+                                      ? BoxDecoration(
+                                      color: Settings.colors[6],
+                                      borderRadius:
+                                      BorderRadius.circular(25))
+                                      : BoxDecoration(),
+                                  duration: Duration(milliseconds: 300),
+                                  child: _item(1, Icons.home, 'Home'),
+                                ),
+                                AnimatedContainer(
+                                  width: bottomBarIndex.value == 2 ? MediaQuery.of(context).size.width * 0.3 : 54,
+                                  decoration: bottomBarIndex.value == 2
+                                      ? BoxDecoration(
+                                      color: Settings.colors[6],
+                                      borderRadius:
+                                      BorderRadius.circular(25))
+                                      : BoxDecoration(),
+                                  duration: Duration(milliseconds: 300),
+                                  child: _item(2, Icons.settings, 'Settings'),
+                                ),
+                              ],
+                            );
+                      });
+                    },
+                  )
+            )
           )
-        )
-      ],
+        ],
+      ),
     );
   }
 }
