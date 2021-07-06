@@ -67,10 +67,11 @@ class AudioController {
       bookProvider.changeStatus('reading');
     }
     await AudioService.start(
-        backgroundTaskEntrypoint: backgroundTaskEntrypoint,
-        params: bookProvider.toAudioTaskMap(),
-        rewindInterval: Settings.rewind,
-        fastForwardInterval: Settings.forceStop
+      backgroundTaskEntrypoint: backgroundTaskEntrypoint,
+      params: bookProvider.toAudioTaskMap(),
+      rewindInterval: Settings.rewind,
+      fastForwardInterval: Settings.forceStop,
+      androidNotificationIcon: 'mipmap/launcher_icon'
     );
   }
 
