@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:audiobook/classes/audioController.dart';
 import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/widgets/scrollBehavior.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/widgets/progressBar.dart';

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:audiobook/classes/audioController.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
-import 'package:flutter/material.dart';
 
 class MyAudioPlayerTask extends BackgroundAudioTask {
   static AudioPlayer player = AudioPlayer();

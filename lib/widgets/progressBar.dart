@@ -2,7 +2,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:audiobook/classes/audio_video_progress_bar.dart';
 import 'package:audiobook/classes/audioController.dart';
 import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/player.dart';
 import 'package:audiobook/classes/settings.dart';
 import 'package:audiobook/pages/BookPage.dart';
 import 'package:flutter/material.dart';

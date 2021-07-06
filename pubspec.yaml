@@ -24,10 +24,17 @@ dependencies:
   just_audio: ^0.7.5
   flutter_ffmpeg: ^0.4.0
   auto_size_text: ^3.0.0-nullsafety.0
+  flutter_launcher_icons: ^0.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+flutter_icons:
+  android: "launcher_icon"
+  image_path: "images/logo_with_bg.png"
+  adaptive_icon_background: "#363B54"
+  adaptive_icon_foreground: "images/logo_no_bg.png"
 
 flutter:
   uses-material-design: true
