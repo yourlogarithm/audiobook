@@ -10,7 +10,7 @@ ValueNotifier<bool> booksChanged = ValueNotifier(false);
 
 class BookProvider {
 
-  static get nullBookProvider => BookProvider(
+  static BookProvider get nullBookProvider => BookProvider(
     id: -1,
     parentPath: 'none',
     title: 'Start listening to an audiobook',

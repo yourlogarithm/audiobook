@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage> {
                       BookProvider bookProvider = allBooks.firstWhere((bookProvider) => bookProvider.id == value, orElse: () => BookProvider.nullBookProvider);
                       return GestureDetector(
                         onTap: () {
-                          if (bookProvider != BookProvider.nullBookProvider){
+                          if (!bookProvider.compareTo(BookProvider.nullBookProvider)){
                             Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: bookProvider);
                           }
                         },
