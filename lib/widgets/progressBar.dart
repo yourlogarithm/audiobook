@@ -53,13 +53,6 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
   }
 
   @override
-  void initState() {
-    buttonsTopPadding = 0.005;
-    buttonsHeight = 0.075;
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     double _width = widget.isBookPage ? MediaQuery.of(context).size.width * 0.8 : MediaQuery.of(context).size.width * 0.9;
     return ValueListenableBuilder<Duration>(
@@ -103,7 +96,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                           }
                         }
                         return SizedBox(
-                            height: MediaQuery.of(context).size.height * (widget.isBookPage ? 0.025 : 0.02),
+                            height: MediaQuery.of(context).size.height * (widget.isBookPage ? 0.025 : MediaQuery.of(context).size.height < 820 ? 0.02 : 0.01),
                             child: ProgressBar(
                               progress: _position,
                               total: widget.bookProvider.currentBook.length,
@@ -116,7 +109,7 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                               thumbColor: Settings.colors[6],
                               thumbGlowColor: Settings.colors[6].withOpacity(0.3),
                               thumbGlowRadius: MediaQuery.of(context).size.height * 0.0125,
-                              thumbRadius: MediaQuery.of(context).size.height * 0.01,
+                              thumbRadius: MediaQuery.of(context).size.height * (MediaQuery.of(context).size.height < 820 ? 0.01 : 0.008),
                               onSeek: (position) {
                                 AudioController.seek(position, widget.bookProvider);
                               },
@@ -137,6 +130,9 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
                             buttonsHeight = 0.075;
                             buttonsOpacity = 1;
                           }
+                        } else {
+                          buttonsTopPadding = MediaQuery.of(context).size.height < 820 ? 0.005 : 0;
+                          buttonsHeight = MediaQuery.of(context).size.height < 820 ? 0.075 : 0.07;
                         }
                         return AnimatedContainer(
                             duration: bookPageIsLocked.value ? Duration(milliseconds: 500) : Duration(milliseconds: 250),

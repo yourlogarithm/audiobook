@@ -51,7 +51,7 @@ class _HomePageState extends State<HomePage> {
                           Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: bookProvider);
                         },
                         child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               SizedBox(
                                 width: MediaQuery.of(context).size.width * 0.9,
