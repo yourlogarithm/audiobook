@@ -1,6 +1,6 @@
 import 'package:audio_service/audio_service.dart';
-import 'package:audiobook/content.dart';
-import 'package:audiobook/loading.dart';
+import 'package:audiodept/content.dart';
+import 'package:audiodept/loading.dart';
 import 'package:flutter/material.dart';
 
 GlobalKey<NavigatorState> mainNavigatorKey = GlobalKey<NavigatorState>();

@@ -1,5 +1,5 @@
-import 'package:audiobook/classes/explorer.dart';
-import 'package:audiobook/classes/settings.dart';
+import 'package:audiodept/classes/explorer.dart';
+import 'package:audiodept/classes/settings.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:path/path.dart' as dpath;

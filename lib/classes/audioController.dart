@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/player.dart';
+import 'package:audiodept/classes/book.dart';
+import 'package:audiodept/classes/player.dart';
 import 'package:audio_service/audio_service.dart';
-import 'package:audiobook/classes/settings.dart';
+import 'package:audiodept/classes/settings.dart';
 import 'package:flutter/cupertino.dart';
 
 backgroundTaskEntrypoint() {

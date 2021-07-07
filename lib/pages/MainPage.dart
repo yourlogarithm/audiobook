@@ -1,8 +1,8 @@
-import 'package:audiobook/widgets/scrollBehavior.dart';
-import 'package:audiobook/classes/settings.dart';
-import 'package:audiobook/pages/HomePage.dart';
-import 'package:audiobook/pages/LibraryPage.dart';
-import 'package:audiobook/pages/SettingsPage.dart';
+import 'package:audiodept/widgets/scrollBehavior.dart';
+import 'package:audiodept/classes/settings.dart';
+import 'package:audiodept/pages/HomePage.dart';
+import 'package:audiodept/pages/LibraryPage.dart';
+import 'package:audiodept/pages/SettingsPage.dart';
 import 'package:flutter/material.dart';
 
 ValueNotifier<int> bottomBarIndex = ValueNotifier(1);

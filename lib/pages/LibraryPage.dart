@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/widgets/bookFocusedMenu.dart';
-import 'package:audiobook/widgets/scrollBehavior.dart';
-import 'package:audiobook/classes/settings.dart';
-import 'package:audiobook/content.dart';
+import 'package:audiodept/classes/book.dart';
+import 'package:audiodept/widgets/bookFocusedMenu.dart';
+import 'package:audiodept/widgets/scrollBehavior.dart';
+import 'package:audiodept/classes/settings.dart';
+import 'package:audiodept/content.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

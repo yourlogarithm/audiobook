@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/database.dart';
+import 'package:audiodept/classes/book.dart';
+import 'package:audiodept/classes/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'classes/settings.dart';

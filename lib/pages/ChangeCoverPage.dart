@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/explorer.dart';
-import 'package:audiobook/classes/settings.dart';
-import 'package:audiobook/content.dart';
+import 'package:audiodept/classes/book.dart';
+import 'package:audiodept/classes/explorer.dart';
+import 'package:audiodept/classes/settings.dart';
+import 'package:audiodept/content.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';

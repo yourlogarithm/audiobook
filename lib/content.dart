@@ -1,8 +1,8 @@
-import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/loading.dart';
-import 'package:audiobook/pages/AddBookPage.dart';
-import 'package:audiobook/pages/BookPage.dart';
-import 'package:audiobook/pages/ChangeCoverPage.dart';
+import 'package:audiodept/classes/book.dart';
+import 'package:audiodept/loading.dart';
+import 'package:audiodept/pages/AddBookPage.dart';
+import 'package:audiodept/pages/BookPage.dart';
+import 'package:audiodept/pages/ChangeCoverPage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';

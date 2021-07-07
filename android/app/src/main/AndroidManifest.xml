@@ -1,11 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.audiobook">
+    package="com.sebastiancretu.audiodept">
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
    <application
-        android:label="audiobook"
+        android:label="Audio Dept"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"

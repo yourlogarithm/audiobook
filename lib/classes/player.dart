@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:audiobook/classes/audioController.dart';
+import 'package:audiodept/classes/audioController.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
 

@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:audiobook/classes/database.dart';
-import 'package:audiobook/classes/settings.dart';
+import 'package:audiodept/classes/database.dart';
+import 'package:audiodept/classes/settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
@@ -227,7 +227,7 @@ class BookProvider {
           duration: Duration(seconds: 1),
           backgroundColor: Settings.colors[6],
           content: Text(
-            'Book already exists',
+            'This book already exists',
             style: TextStyle(
                 fontFamily: 'Montserrat', fontWeight: FontWeight.w600),
           )

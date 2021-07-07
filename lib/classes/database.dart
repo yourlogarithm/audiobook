@@ -1,5 +1,5 @@
-import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/classes/settings.dart';
+import 'package:audiodept/classes/book.dart';
+import 'package:audiodept/classes/settings.dart';
 import 'package:sqflite/sqflite.dart';
 import 'dart:io';
 
@@ -20,7 +20,7 @@ class DatabaseProvider {
     String dbPath = await getDatabasesPath();
 
     return await openDatabase(
-        '$dbPath/audiobook.db',
+        '$dbPath/audiodept.db',
         version: 4,
         onCreate: (Database db, int version) async {
           await db.execute(

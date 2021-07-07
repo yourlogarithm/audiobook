@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'package:audiobook/classes/book.dart';
-import 'package:audiobook/widgets/progressBar.dart';
-import 'package:audiobook/widgets/bookFocusedMenu.dart';
-import 'package:audiobook/widgets/scrollBehavior.dart';
-import 'package:audiobook/classes/settings.dart';
-import 'package:audiobook/content.dart';
+import 'package:audiodept/classes/book.dart';
+import 'package:audiodept/widgets/progressBar.dart';
+import 'package:audiodept/widgets/bookFocusedMenu.dart';
+import 'package:audiodept/widgets/scrollBehavior.dart';
+import 'package:audiodept/classes/settings.dart';
+import 'package:audiodept/content.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 
@@ -48,7 +48,9 @@ class _HomePageState extends State<HomePage> {
                       BookProvider bookProvider = allBooks.firstWhere((bookProvider) => bookProvider.id == value, orElse: () => BookProvider.nullBookProvider);
                       return GestureDetector(
                         onTap: () {
-                          Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: bookProvider);
+                          if (bookProvider != BookProvider.nullBookProvider){
+                            Content.contentNavigatorKey.currentState!.pushReplacementNamed('/bookPage', arguments: bookProvider);
+                          }
                         },
                         child: Column(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
