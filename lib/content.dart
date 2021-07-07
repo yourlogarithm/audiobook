@@ -31,6 +31,16 @@ class Content extends StatefulWidget {
 }
 
 class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
+
+  @override
+  void initState() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
