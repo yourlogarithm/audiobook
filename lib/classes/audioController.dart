@@ -73,6 +73,7 @@ class AudioController {
       fastForwardInterval: Settings.forceStop,
       androidNotificationIcon: 'mipmap/launcher_icon'
     );
+    Settings.lastListenedBook.value = bookProvider.id;
   }
 
   static void play(BookProvider bookProvider) async {
