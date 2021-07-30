@@ -74,6 +74,7 @@ class AudioController {
       androidNotificationIcon: 'mipmap/launcher_icon'
     );
     Settings.lastListenedBook.value = bookProvider.id;
+    Settings.write();
   }
 
   static void play(BookProvider bookProvider) async {
